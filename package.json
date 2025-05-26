@@ -1,0 +1,39 @@
+{
+  "name": "pulumi-aws-lambify",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "dev": "tsx examples/basic/index.ts",
+    "lint": "eslint .",
+    "format": "prettier --check .",
+    "test": "vitest",
+    "test:unit": "vitest tests/unit",
+    "test:integration": "vitest tests/integration"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/neoforkdev/pulumi-aws-lambify.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/neoforkdev/pulumi-aws-lambify/issues"
+  },
+  "homepage": "https://github.com/neoforkdev/pulumi-aws-lambify#readme",
+  "description": "",
+  "dependencies": {
+    "@pulumi/aws": "^6.81.0",
+    "@pulumi/pulumi": "^3.171.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.21",
+    "eslint": "^9.27.0",
+    "eslint-config-prettier": "^10.1.5",
+    "eslint-plugin-import": "^2.31.0",
+    "prettier": "^3.5.3",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.4"
+  }
+}

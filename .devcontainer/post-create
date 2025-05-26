@@ -1,0 +1,16 @@
+#!/bin/bash
+
+ls -a
+sudo chown -R vscode:vscode /workspaces/*
+
+if [ -d "/home/vscode/.ssh" ]; then
+    sudo chown -R vscode:vscode /home/vscode/.ssh
+    sudo chmod 700 /home/vscode/.ssh
+    sudo find /home/vscode/.ssh -type f -exec chmod 600 {} \;
+fi
+
+if [ -d "/home/vscode/.aws" ]; then
+    sudo chown -R vscode:vscode /home/vscode/.aws
+    sudo chmod 700 /home/vscode/.aws
+    sudo find /home/vscode/.aws -type f -exec chmod 600 {} \;
+fi

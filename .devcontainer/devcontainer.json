@@ -1,0 +1,41 @@
+{
+  "name": "TaaS Dev Container",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "forwardPorts": [5173, 3000],
+  "mounts": [
+    "source=${localEnv:HOME}/.ssh,target=/home/vscode/.ssh,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.aws,target=/home/vscode/.aws,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.saml2aws,target=/home/vscode/.saml2aws,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.gitconfig,target=/home/vscode/.gitconfig,type=bind,consistency=cached"
+  ],
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.shell.linux": "/bin/bash",
+        "python.defaultInterpreterPath": "/usr/local/bin/python"
+      },
+      "extensions": [
+        "ms-python.python",
+        "dbaeumer.vscode-eslint",
+        "ms-azuretools.vscode-docker",
+        "exiasr.hadolint",
+        "tfsec.tfsec",
+        "hashicorp.terraform",
+        "hashicorp.hcl",
+        "vue.volar",
+        "golang.go",
+        "davidanson.vscode-markdownlint",
+        "esbenp.prettier-vscode",
+        "svelte.svelte-vscode",
+        "ardenivanov.svelte-intellisense",
+        "bradlc.vscode-tailwindcss",
+        "csstools.postcss",
+        "inlang.vs-code-extension"
+      ]
+    }
+  },
+  "postStartCommand": "post-start",
+  "postCreateCommand": "post-create"
+}
