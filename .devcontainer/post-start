@@ -1,7 +1,5 @@
 #!/bin/bash
 
-pre-commit install
-
 git config --global core.editor nano
 echo "export EDITOR=nano" >> ~/.bashrc
 echo "export GIT_EDITOR=nano" >> ~/.bashrc

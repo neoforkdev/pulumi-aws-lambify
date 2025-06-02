@@ -1,14 +1,15 @@
 {
-  "name": "pulumi-aws-lambify",
+  "name": "@neofork/lambify",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
     "dev": "tsx examples/basic/index.ts",
+    "playground": "tsx playground.ts",
     "lint": "eslint .",
-    "format": "prettier --check .",
-    "test": "vitest",
-    "test:unit": "vitest tests/unit",
-    "test:integration": "vitest tests/integration"
+    "format": "prettier --write .",
+    "test": "vitest --run",
+    "test:unit": "vitest tests/unit --run",
+    "test:integration": "vitest tests/integration --run"
   },
   "repository": {
     "type": "git",
