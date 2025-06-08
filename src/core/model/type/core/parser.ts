@@ -1,14 +1,13 @@
 import { Result } from './result';
-import { Logger } from './logger';
+import { Logger } from '../../../logger/logger';
 import { Diagnostic } from './diagnostic';
 
 export interface Parser<T, TError = any> {
-  readonly logger: Logger;
   parse(input: string): Result<T, Diagnostic<TError>[]>;
 }
 
 export abstract class BaseParser<T, TError = any> implements Parser<T, TError> {
-  public readonly logger: Logger;
+  protected readonly logger: Logger;
 
   constructor(logger?: Logger) {
     this.logger = logger || Logger.forClass(this);
