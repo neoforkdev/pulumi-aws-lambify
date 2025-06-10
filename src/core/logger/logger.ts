@@ -1,10 +1,15 @@
-import { Severity, Diagnostic, FileDiagnostic } from './diagnostic';
-
 const RESET = '\x1b[0m';
 const RED = '\x1b[31m';
 const YELLOW = '\x1b[33m';
 const BLUE = '\x1b[34m';
 const GRAY = '\x1b[90m';
+
+enum Severity {
+  Error = 'error',
+  Warning = 'warning',
+  Info = 'info',
+  Debug = 'debug',
+}
 
 const ConsoleColor: Record<Severity, string> = {
   [Severity.Error]: RED,
@@ -15,29 +20,31 @@ const ConsoleColor: Record<Severity, string> = {
 
 export class Logger {
   private prefix: string;
+  private prettifyJson: boolean;
 
-  constructor(prefix?: string) {
+  constructor(prefix?: string, stringify: boolean = true) {
     if (prefix !== undefined) {
       this.prefix = prefix;
     } else {
       // Automatically derive prefix from the calling class
       this.prefix = this.getCallerClassName();
     }
+    this.prettifyJson = stringify;
   }
 
   /**
    * Create a logger with automatic class name detection
    */
-  static forClass(instance: any): Logger {
+  static forClass(instance: any, stringify: boolean = true): Logger {
     const className = instance.constructor.name;
-    return new Logger(className);
+    return new Logger(className, stringify);
   }
 
   /**
    * Create a logger with manual prefix
    */
-  static withPrefix(prefix: string): Logger {
-    return new Logger(prefix);
+  static withPrefix(prefix: string, stringify: boolean = true): Logger {
+    return new Logger(prefix, stringify);
   }
 
   /**
@@ -66,26 +73,6 @@ export class Logger {
     }
 
     return 'Unknown';
-  }
-
-  /**
-   * Print a single diagnostic - handles prefix/timestamp/colors only
-   */
-  printDiagnostic<TError>(diagnostic: Diagnostic<TError>): void {
-    const timestamp = new Date().toISOString();
-    const color = ConsoleColor[diagnostic.severity];
-    const prefixStr = this.prefix ? `[${this.prefix}] ` : '';
-
-    // Simple: just format the diagnostic message with prefix/timestamp/colors
-    const message = `${color}[${timestamp}] ${prefixStr}${diagnostic.severity.toUpperCase()}: ${diagnostic.format()}${RESET}`;
-    console.log(message);
-  }
-
-  /**
-   * Print multiple diagnostics
-   */
-  printDiagnostics<TError>(diagnostics: Diagnostic<TError>[]): void {
-    diagnostics.forEach((diagnostic) => this.printDiagnostic(diagnostic));
   }
 
   /**
@@ -129,12 +116,19 @@ export class Logger {
 
     const formattedMessage =
       args.length > 0
-        ? `${message} ${args.map((arg) => (typeof arg === 'object' ? JSON.stringify(arg) : arg)).join(' ')}`
+        ? `${message} ${args.map((arg) => (typeof arg === 'object' ? this.formatObject(arg) : arg)).join(' ')}`
         : message;
 
     console.log(
       `${color}[${timestamp}] ${prefixStr}${severity.toUpperCase()}: ${formattedMessage}${RESET}`,
     );
+  }
+
+  /**
+   * Format object based on stringify setting
+   */
+  private formatObject(obj: any): string {
+    return this.prettifyJson ? JSON.stringify(obj, null, 2) : JSON.stringify(obj);
   }
 
   /**
@@ -144,6 +138,6 @@ export class Logger {
     const newPrefix = this.prefix
       ? `${this.prefix}:${childPrefix}`
       : childPrefix;
-    return new Logger(newPrefix);
+    return new Logger(newPrefix, this.prettifyJson);
   }
 }

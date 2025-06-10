@@ -1,10 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { Logger } from '../../../src/core/model/type/core/logger';
-import {
-  Severity,
-  Diagnostic,
-  FileDiagnostic,
-} from '../../../src/core/model/type/core/diagnostic';
+import { Logger } from '../../../src/core/logger/logger';
 
 describe('Logger', () => {
   let consoleSpy: ReturnType<typeof vi.spyOn>;
@@ -132,176 +127,11 @@ describe('Logger', () => {
     });
   });
 
-  describe('printDiagnostic method', () => {
-    it('should print simple diagnostic', () => {
-      const logger = new Logger('Test');
-      const diagnostic = Diagnostic.create(
-        Severity.Error,
-        'Something went wrong',
-        new Error('Test error'),
-      );
-
-      logger.printDiagnostic(diagnostic);
-
-      expect(consoleSpy).toHaveBeenCalledTimes(1);
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[Test] ERROR: Something went wrong'),
-      );
-    });
-
-    it('should print file diagnostic with location info', () => {
-      const logger = new Logger('Test');
-      const currentDir = process.cwd();
-      const diagnostic = FileDiagnostic.createFileError(
-        Severity.Warning,
-        'Syntax error',
-        `${currentDir}/test-file.ts`,
-        2,
-        15,
-      );
-
-      logger.printDiagnostic(diagnostic);
-
-      expect(consoleSpy).toHaveBeenCalledTimes(1);
-      const loggedMessage = consoleSpy.mock.calls[0][0];
-      expect(loggedMessage).toContain('[Test] WARNING: Syntax error');
-      expect(loggedMessage).toContain('test-file.ts:2:15');
-      expect(loggedMessage).toContain('-->');
-    });
-
-    it('should print file diagnostic with error details', () => {
-      const logger = new Logger('Test');
-      const diagnostic = FileDiagnostic.createFileError(
-        Severity.Error,
-        'Module not found',
-        '/non/existent/missing.ts',
-        3,
-        23,
-        new Error('ENOENT'),
-      );
-
-      logger.printDiagnostic(diagnostic);
-
-      expect(consoleSpy).toHaveBeenCalledTimes(1);
-      const loggedMessage = consoleSpy.mock.calls[0][0] as string;
-
-      // Remove ANSI color codes for content testing
-      const cleanMessage = loggedMessage.replace(/\x1b\[[0-9;]*m/g, '');
-
-      expect(cleanMessage).toContain('[Test] ERROR: Module not found');
-      expect(cleanMessage).toContain('missing.ts:3:23');
-      expect(cleanMessage).toContain('at /non/existent/missing.ts');
-    });
-
-    it('should print file diagnostic with Rust-style format', () => {
-      const logger = new Logger('Test');
-      const currentDir = process.cwd();
-      const diagnostic = FileDiagnostic.createFileError(
-        Severity.Warning,
-        'Syntax error',
-        `${currentDir}/test-file.ts`,
-        2,
-        15,
-      );
-
-      logger.printDiagnostic(diagnostic);
-
-      expect(consoleSpy).toHaveBeenCalledTimes(1);
-      const loggedMessage = consoleSpy.mock.calls[0][0];
-
-      // Should contain the timestamp and prefix
-      expect(loggedMessage).toContain('[Test] WARNING:');
-      expect(loggedMessage).toMatch(
-        /\[\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z\]/,
-      );
-
-      // Should contain Rust-style formatting in the message
-      expect(loggedMessage).toContain('Syntax error');
-      expect(loggedMessage).toContain('-->');
-      expect(loggedMessage).toContain('test-file.ts:2:15');
-      expect(loggedMessage).toContain('|');
-      expect(loggedMessage).toContain('^');
-    });
-
-    it('should print file diagnostic with fallback format when file does not exist', () => {
-      const logger = new Logger('Test');
-      const diagnostic = FileDiagnostic.createFileError(
-        Severity.Error,
-        'Module not found',
-        '/non/existent/missing.ts',
-        3,
-        23,
-      );
-
-      logger.printDiagnostic(diagnostic);
-
-      expect(consoleSpy).toHaveBeenCalledTimes(1);
-      const loggedMessage = consoleSpy.mock.calls[0][0] as string;
-
-      // Should contain the timestamp and prefix
-      expect(loggedMessage).toContain('[Test] ERROR:');
-
-      // Remove ANSI color codes for content testing
-      const cleanMessage = loggedMessage.replace(/\x1b\[[0-9;]*m/g, '');
-
-      // Should contain simple fallback format with colors
-      expect(cleanMessage).toContain('Module not found');
-      expect(cleanMessage).toContain('missing.ts:3:23');
-      expect(cleanMessage).toContain('at /non/existent/missing.ts');
-
-      // Should contain fallback color codes
-      expect(loggedMessage).toMatch(/\x1b\[36m/); // CYAN for filename
-      expect(loggedMessage).toMatch(/\x1b\[90m/); // GRAY for parentheses
-      expect(loggedMessage).toMatch(/\x1b\[33m/); // YELLOW for path
-      expect(loggedMessage).toMatch(/\x1b\[0m/); // RESET
-
-      // Should NOT contain Rust-style formatting
-      expect(loggedMessage).not.toContain('-->');
-      expect(loggedMessage).not.toContain('|');
-      expect(loggedMessage).not.toContain('^');
-    });
-  });
-
-  describe('printDiagnostics method', () => {
-    it('should print multiple mixed diagnostics', () => {
-      const logger = new Logger('Test');
-      const currentDir = process.cwd();
-      const diagnostics: Diagnostic[] = [
-        Diagnostic.create(Severity.Error, 'Simple error'),
-        FileDiagnostic.createFileError(
-          Severity.Warning,
-          'File warning',
-          `${currentDir}/test-file.ts`,
-          2,
-          10,
-        ),
-      ];
-
-      logger.printDiagnostics(diagnostics);
-
-      expect(consoleSpy).toHaveBeenCalledTimes(2);
-
-      // First diagnostic (simple)
-      expect(consoleSpy).toHaveBeenNthCalledWith(
-        1,
-        expect.stringContaining('[Test] ERROR: Simple error'),
-      );
-
-      // Second diagnostic (file with Rust-style format)
-      const secondCall = consoleSpy.mock.calls[1][0];
-      expect(secondCall).toContain('[Test] WARNING:');
-      expect(secondCall).toContain('File warning');
-      expect(secondCall).toContain('-->');
-      expect(secondCall).toContain('test-file.ts:2:10');
-    });
-  });
-
   describe('child method', () => {
     it('should create child logger with combined prefix', () => {
-      const parentLogger = new Logger('Parent');
-      const childLogger = parentLogger.child('Child');
-
-      childLogger.info('test');
+      const logger = new Logger('Parent');
+      const child = logger.child('Child');
+      child.info('test');
 
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining('[Parent:Child] INFO: test'),
@@ -309,10 +139,9 @@ describe('Logger', () => {
     });
 
     it('should create child logger from empty prefix', () => {
-      const parentLogger = Logger.withPrefix('');
-      const childLogger = parentLogger.child('Child');
-
-      childLogger.info('test');
+      const logger = new Logger('');
+      const child = logger.child('Child');
+      child.info('test');
 
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining('[Child] INFO: test'),
@@ -320,14 +149,13 @@ describe('Logger', () => {
     });
 
     it('should create nested child loggers', () => {
-      const parentLogger = new Logger('Parent');
-      const childLogger = parentLogger.child('Child');
-      const grandChildLogger = childLogger.child('GrandChild');
-
-      grandChildLogger.info('test');
+      const logger = new Logger('Root');
+      const child = logger.child('Child');
+      const grandchild = child.child('GrandChild');
+      grandchild.info('test');
 
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[Parent:Child:GrandChild] INFO: test'),
+        expect.stringContaining('[Root:Child:GrandChild] INFO: test'),
       );
     });
   });
@@ -335,7 +163,7 @@ describe('Logger', () => {
   describe('Color formatting', () => {
     it('should include color codes for error severity', () => {
       const logger = new Logger('Test');
-      logger.error('error');
+      logger.error('error message');
 
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringMatching(/\x1b\[31m.*ERROR.*\x1b\[0m/),
@@ -344,7 +172,7 @@ describe('Logger', () => {
 
     it('should include color codes for warning severity', () => {
       const logger = new Logger('Test');
-      logger.warning('warning');
+      logger.warning('warning message');
 
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringMatching(/\x1b\[33m.*WARNING.*\x1b\[0m/),
@@ -353,7 +181,7 @@ describe('Logger', () => {
 
     it('should include color codes for info severity', () => {
       const logger = new Logger('Test');
-      logger.info('info');
+      logger.info('info message');
 
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringMatching(/\x1b\[34m.*INFO.*\x1b\[0m/),
@@ -362,7 +190,7 @@ describe('Logger', () => {
 
     it('should include color codes for debug severity', () => {
       const logger = new Logger('Test');
-      logger.debug('debug');
+      logger.debug('debug message');
 
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringMatching(/\x1b\[90m.*DEBUG.*\x1b\[0m/),
@@ -373,12 +201,10 @@ describe('Logger', () => {
   describe('Timestamp formatting', () => {
     it('should include timestamp in ISO format', () => {
       const logger = new Logger('Test');
-      logger.info('test');
+      logger.info('test message');
 
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringMatching(
-          /\[\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z\]/,
-        ),
+        expect.stringMatching(/\[\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z\]/),
       );
     });
   });
@@ -407,7 +233,7 @@ describe('Logger', () => {
       logger.info('message', undefined);
 
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[Test] INFO: message'),
+        expect.stringContaining('[Test] INFO: message '),
       );
     });
 
@@ -417,7 +243,17 @@ describe('Logger', () => {
       logger.info('message', obj);
 
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('{"key":"value"}'),
+        expect.stringContaining('[Test] INFO: message {\n  "key": "value"\n}'),
+      );
+    });
+
+    it('should handle object arguments with compact JSON when stringify is false', () => {
+      const logger = new Logger('Test', false);
+      const obj = { key: 'value' };
+      logger.info('message', obj);
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('[Test] INFO: message {"key":"value"}'),
       );
     });
   });

@@ -1,15 +1,33 @@
 {
   "name": "@neofork/lambify",
   "version": "1.0.0",
-  "main": "index.js",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.js",
+      "import": "./dist/index.js"
+    }
+  },
   "scripts": {
+    "build": "npm run clean && tsc -p tsconfig.build.json",
+    "build:check": "npm run lint && npm run test && npm run build",
+    "clean": "rm -rf dist",
     "dev": "tsx examples/basic/index.ts",
     "playground": "tsx playground.ts",
     "lint": "eslint .",
     "format": "prettier --write .",
     "test": "vitest --run",
     "test:unit": "vitest tests/unit --run",
-    "test:integration": "vitest tests/integration --run"
+    "test:integration": "vitest tests/integration --run",
+    "prepublishOnly": "npm run build"
   },
   "repository": {
     "type": "git",
@@ -28,6 +46,7 @@
     "@pulumi/pulumi": "^3.171.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.28.0",
     "@types/node": "^22.15.21",
     "eslint": "^9.27.0",
     "eslint-config-prettier": "^10.1.5",
@@ -35,6 +54,7 @@
     "prettier": "^3.5.3",
     "tsx": "^4.19.4",
     "typescript": "^5.8.3",
+    "typescript-eslint": "^8.33.1",
     "vitest": "^3.1.4"
   }
 }

@@ -1,0 +1,4 @@
+memory: 256
+timeout: 30
+environment:
+  USERS_TABLE: users-prod 

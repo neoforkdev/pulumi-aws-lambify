@@ -1,0 +1,3 @@
+description: Layer with dependencies
+compatible_runtimes:
+  - python3.9 
