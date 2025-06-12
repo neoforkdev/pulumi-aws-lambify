@@ -98,7 +98,7 @@ describe('Tree Parser Errors', () => {
       [dirError, notDirError, emptyError].forEach(error => {
         expect(error).toBeInstanceOf(Error);
         expect(error).toBeInstanceOf(LambifyError);
-        expect(error.timestamp).toBeInstanceOf(Date);
+        expect(typeof error.timestamp).toBe('string');
         expect(typeof error.toString()).toBe('string');
       });
     });
@@ -114,6 +114,37 @@ describe('Tree Parser Errors', () => {
         expect(error.filePath).toBeDefined();
         expect(error.location).toBeDefined();
       });
+    });
+  });
+
+  describe('Solution suggestions', () => {
+    it('should include helpful solution suggestions in all error types', () => {
+      const dirError = new DirectoryNotFoundError('/missing');
+      const notDirError = new NotADirectoryError('/file.txt');
+      const emptyError = new EmptyApiFolderError('/empty', 'handler');
+      const configError = new MissingConfigFileError('/config.yaml', '/route');
+      const extError = new InvalidFileExtensionError('/handler.txt', 'txt');
+
+      // Verify all errors have suggestions
+      [dirError, notDirError, emptyError, configError, extError].forEach(error => {
+        expect(error.suggestion).toBeDefined();
+        expect(typeof error.suggestion).toBe('string');
+        expect(error.suggestion!.length).toBeGreaterThan(0);
+      });
+    });
+
+    it('should include suggestions in formatted error messages', () => {
+      const dirError = new DirectoryNotFoundError('/missing');
+      const formatted = dirError.toString();
+      
+      expect(formatted).toContain('= help: Create the directory');
+    });
+
+    it('should provide contextual suggestions for each error type', () => {
+      const extError = new InvalidFileExtensionError('/handler.txt', 'txt');
+      const formatted = extError.toString();
+      
+      expect(formatted).toContain('= help: Rename the file with a supported extension: .py, .js, .ts');
     });
   });
 }); 

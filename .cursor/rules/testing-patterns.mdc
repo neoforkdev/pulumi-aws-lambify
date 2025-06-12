@@ -1,0 +1,125 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Testing Patterns and Fixtures
+
+## Fixture-Based Testing Strategy
+
+### Philosophy
+- **No Temporary Files**: Use real file structures in [tests/fixtures/](mdc:tests/fixtures)
+- **Clean Separation**: Test data separated from test logic
+- **Comprehensive Coverage**: All scenarios including edge cases and errors
+- **Realistic Data**: Fixtures mirror real-world project structures
+
+### Fixture Organization
+
+#### Parser Fixtures
+Located in [tests/fixtures/parser/directory/](mdc:tests/fixtures/parser/directory):
+
+**API-Only Scenarios:**
+- `api-basic/` - Simple API with handler and config
+- `api-with-deps/` - API with requirements.txt
+- `api-multiple/` - Multiple API routes
+- `api-nested/` - Nested API routes (v1/users, v2/orders)
+
+**API + Layers Scenarios:**
+- `api-with-layers/` - Complete structure with APIs and layers
+- `nested-api-with-layers/` - Nested APIs with layers
+- `varying-dependencies/` - Mixed dependency configurations
+
+**Edge Cases:**
+- `mixed-layers/` - Valid and invalid layers (tests filtering)
+- `empty-layers/` - Empty layers directory
+- `api-invalid-extension/` - Invalid file extensions
+- `api-missing-config/` - Missing configuration files
+
+### Test Implementation Pattern
+
+```typescript
+describe('Parser Tests', () => {
+  const fixturesDir = path.join(__dirname, '../../../fixtures/parser/directory');
+  
+  it('should parse valid structure', async () => {
+    const parser = new ApiTreeParser();
+    const fixturePath = path.join(fixturesDir, 'api-basic');
+    
+    const result = await parser.parse(fixturePath);
+    
+    expect(result.routes).toHaveLength(1);
+    expect(result.routes[0].route).toBe('/hello');
+  });
+});
+```
+
+### Logger Testing
+
+For testing Logger behavior with different stringify settings:
+
+```typescript
+describe('Logger Tests', () => {
+  let consoleSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+  });
+
+  it('should use pretty JSON by default', () => {
+    const logger = new Logger('Test');
+    logger.info('message', { key: 'value' });
+    
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining('{\n  "key": "value"\n}')
+    );
+  });
+});
+```
+
+### Key Testing Rules
+
+1. **Fixture Creation**: Add new scenarios to [tests/fixtures/](mdc:tests/fixtures) directory
+2. **Test Organization**: Mirror source structure in [tests/unit/](mdc:tests/unit)
+3. **No Temp Files**: Never create temporary files in tests - use fixtures
+4. **Error Testing**: Test error scenarios with appropriate fixtures
+5. **Logger Mocking**: Always mock console.log when testing logging behavior
+6. **Path Construction**: Use `path.join(__dirname, 'fixtures/...')` for fixture paths
+
+### Fixture Structure Examples
+
+**API Basic Structure:**
+```
+api-basic/
+├── api/
+│   └── hello/
+│       ├── handler.py
+│       └── config.yaml
+└── layers/
+```
+
+**Complete API + Layers:**
+```
+api-with-layers/
+├── api/
+│   ├── orders/
+│   │   ├── handler.py
+│   │   └── config.yaml
+│   └── users/
+│       ├── handler.py
+│       ├── config.yaml
+│       └── requirements.txt
+└── layers/
+    ├── auth-layer/
+    │   ├── layer.yaml
+    │   └── requirements.txt
+    └── utils-layer/
+        └── layer.yaml
+```
+
+### Test Coverage Requirements
+
+- **Success Cases**: All valid fixture scenarios
+- **Error Cases**: Invalid structures, missing files, unsupported extensions
+- **Edge Cases**: Empty directories, mixed valid/invalid content
+- **Logger Behavior**: Both pretty and compact JSON formatting
+- **Parser Integration**: Base parser logging with custom parsers

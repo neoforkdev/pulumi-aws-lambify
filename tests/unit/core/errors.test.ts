@@ -6,18 +6,41 @@ class TestLambifyError extends LambifyError {
   constructor(message: string, context: Record<string, unknown> = {}, cause?: Error) {
     super(message, context, cause);
   }
+
+  protected getFormattedMessage(): string {
+    return JSON.stringify({
+      name: this.name,
+      message: this.message,
+      context: this.context,
+      timestamp: this.timestamp,
+      cause: this.cause?.message,
+      stack: this.stack
+    }, null, 2);
+  }
 }
 
 class TestFileError extends FileError {
   constructor(
     message: string,
     filePath: string,
-    line?: number,
-    column?: number,
+    location?: string,
     context: Record<string, unknown> = {},
     cause?: Error
   ) {
-    super(message, filePath, line, column, context, cause);
+    super(message, filePath, location, context, cause);
+  }
+
+  protected getFormattedMessage(): string {
+    return JSON.stringify({
+      name: this.name,
+      message: this.message,
+      filePath: this.filePath,
+      location: this.location,
+      context: this.context,
+      timestamp: this.timestamp,
+      cause: this.cause?.message,
+      stack: this.stack
+    }, null, 2);
   }
 }
 
@@ -28,7 +51,7 @@ describe('LambifyError', () => {
     expect(error.name).toBe('TestLambifyError');
     expect(error.message).toBe('Test error');
     expect(error.context).toEqual({});
-    expect(error.timestamp).toBeInstanceOf(Date);
+    expect(typeof error.timestamp).toBe('string');
     expect(error.cause).toBeUndefined();
   });
 
@@ -56,7 +79,7 @@ describe('LambifyError', () => {
   });
 
   describe('toString()', () => {
-    it('should return JSON string with all properties', () => {
+    it('should return formatted message', () => {
       const context = { test: 'value' };
       const cause = new Error('Original error');
       const error = new TestLambifyError('Test error', context, cause);
@@ -97,16 +120,14 @@ describe('FileError', () => {
 
     expect(error.message).toBe('File error');
     expect(error.filePath).toBe('/path/to/file.ts');
-    expect(error.line).toBeUndefined();
-    expect(error.column).toBeUndefined();
+    expect(error.location).toBe('/path/to/file.ts');
   });
 
-  it('should create file error with line and column', () => {
-    const error = new TestFileError('File error', '/path/to/file.ts', 10, 5);
+  it('should create file error with location', () => {
+    const error = new TestFileError('File error', '/path/to/file.ts', '/path/to/file.ts:10:5');
 
     expect(error.filePath).toBe('/path/to/file.ts');
-    expect(error.line).toBe(10);
-    expect(error.column).toBe(5);
+    expect(error.location).toBe('/path/to/file.ts:10:5');
   });
 
   it('should inherit from LambifyError', () => {
@@ -118,41 +139,31 @@ describe('FileError', () => {
   });
 
   it('should include file info in context', () => {
-    const error = new TestFileError('File error', '/path/to/file.ts', 10, 5);
+    const error = new TestFileError('File error', '/path/to/file.ts');
 
     expect(error.context.filePath).toBe('/path/to/file.ts');
-    expect(error.context.line).toBe(10);
-    expect(error.context.column).toBe(5);
   });
 
   describe('location property', () => {
-    it('should return path only when no line/column', () => {
+    it('should return path only when no location specified', () => {
       const error = new TestFileError('File error', '/path/to/file.ts');
 
       expect(error.location).toBe('/path/to/file.ts');
     });
 
-    it('should return path:line:column when available', () => {
-      const error = new TestFileError('File error', '/path/to/file.ts', 10, 5);
+    it('should return custom location when provided', () => {
+      const error = new TestFileError('File error', '/path/to/file.ts', '/path/to/file.ts:10:5');
 
       expect(error.location).toBe('/path/to/file.ts:10:5');
-    });
-
-    it('should return path only when only line is provided', () => {
-      const error = new TestFileError('File error', '/path/to/file.ts', 10);
-
-      expect(error.location).toBe('/path/to/file.ts');
     });
   });
 
   it('should merge additional context', () => {
     const additionalContext = { operation: 'validation' };
-    const error = new TestFileError('File error', '/path/to/file.ts', 10, 5, additionalContext);
+    const error = new TestFileError('File error', '/path/to/file.ts', undefined, additionalContext);
 
     expect(error.context).toEqual({
       filePath: '/path/to/file.ts',
-      line: 10,
-      column: 5,
       operation: 'validation'
     });
   });

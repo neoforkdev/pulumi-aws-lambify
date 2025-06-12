@@ -1,0 +1,63 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Parser Implementation Guide
+
+## Creating New Parsers
+
+### Base Pattern
+All parsers must extend [Parser<TInput, TOutput>](mdc:src/core/parser/base.ts):
+
+```typescript
+export class MyParser extends Parser<InputType, OutputType> {
+  constructor(stringify: boolean = true) {
+    super('MyParser', stringify);
+  }
+
+  async parsingStep(input: InputType): Promise<OutputType> {
+    // Implementation here - NO logging, base class handles it
+    // Throw domain-specific errors from src/core/model/error/
+    return result;
+  }
+}
+```
+
+### Key Rules
+
+1. **Constructor**: Always accept optional `stringify` parameter and pass to super()
+2. **Method Override**: ONLY implement `parsingStep()`, never override `parse()`
+3. **Logging**: Base class handles all logging automatically - don't add manual logging
+4. **Errors**: Throw specific error types from [errors.ts](mdc:src/core/model/error/errors.ts)
+5. **Types**: Define clear input/output types in [src/core/model/type/](mdc:src/core/model/type)
+
+### Example: ApiTreeParser
+See [ApiTreeParser](mdc:src/core/parser/tree/parser.ts) for reference implementation:
+- Extends `Parser<string, ApiTree>`
+- Constructor accepts `stringify` parameter
+- `parsingStep()` contains only parsing logic
+- Throws domain-specific errors (DirectoryNotFoundError, etc.)
+
+### Testing New Parsers
+
+1. **Fixtures**: Create test data in [tests/fixtures/parser/](mdc:tests/fixtures/parser)
+2. **Unit Tests**: Add tests in [tests/unit/parser/](mdc:tests/unit/parser)
+3. **Pattern**: Use fixtures instead of temporary files
+4. **Coverage**: Test both success and error scenarios
+
+### Error Handling
+
+Throw appropriate errors from [errors.ts](mdc:src/core/model/error/errors.ts):
+- `DirectoryNotFoundError` - Missing directories
+- `FileError` subclasses - File-related issues
+- `MissingConfigFileError` - Missing configuration files
+- Create new error types if needed following the LambifyError pattern
+
+### Logger Integration
+
+The base Parser automatically creates a logger:
+- Logs parse start/completion
+- Logs input/output with JSON formatting
+- Logs errors with full context
+- JSON formatting controlled by `stringify` parameter passed to constructor

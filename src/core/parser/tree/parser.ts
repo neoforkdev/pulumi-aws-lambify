@@ -3,6 +3,7 @@ import { promises as fs } from 'fs';
 
 import type { ApiTree, ApiRoute, ApiLayer } from '../../model/type/domain/api-tree';
 import { Parser } from '../base';
+import { OpenApiParser } from '../openapi';
 import { findFileRecursively, findLayerDirectories } from './discovery';
 import { MissingConfigFileError, InvalidFileExtensionError, MissingLayerConfigFileError } from './errors';
 import { isFileExtensionValid, RequirementsFile, SupportedFileExtension, ConfigFiles } from './validator';
@@ -10,7 +11,8 @@ import { isFileExtensionValid, RequirementsFile, SupportedFileExtension, ConfigF
 /**
  * Parser for discovering and parsing API tree from a directory structure.
  * 
- * Searches for both API routes (in /api directory) and layers (in /layers directory).
+ * Searches for API routes (in /api directory), layers (in /layers directory),
+ * and optionally OpenAPI specifications (openapi.yaml in root).
  * API routes require handler files and config.yaml, layers require layer.yaml.
  * 
  * @example
@@ -20,6 +22,7 @@ import { isFileExtensionValid, RequirementsFile, SupportedFileExtension, ConfigF
  *   const apiTree = await parser.parse('./');
  *   console.log('Found routes:', apiTree.routes.length);
  *   console.log('Found layers:', apiTree.layers.length);
+ *   console.log('OpenAPI spec:', apiTree.openapi ? 'Yes' : 'No');
  * } catch (error) {
  *   if (error instanceof MissingConfigFileError) {
  *     console.error('Config missing:', error.location);
@@ -30,9 +33,11 @@ import { isFileExtensionValid, RequirementsFile, SupportedFileExtension, ConfigF
  * }
  */
 export class ApiTreeParser extends Parser<string, ApiTree> {
+  private readonly openApiParser: OpenApiParser;
 
-  constructor(stringify: boolean = true) {
-    super('ApiTreeParser', stringify);
+  constructor() {
+    super('ApiTreeParser');
+    this.openApiParser = new OpenApiParser();
   }
 
   /**
@@ -40,7 +45,7 @@ export class ApiTreeParser extends Parser<string, ApiTree> {
    * Contains only the parsing logic - logging is handled by the base class.
    * 
    * @param rootDirectory Root directory containing api/ and layers/ subdirectories
-   * @returns ApiTree with routes and layers
+   * @returns ApiTree with routes, layers, and optional OpenAPI spec
    * 
    * @throws {DirectoryNotFoundError} Directory doesn't exist
    * @throws {NotADirectoryError} Path is not a directory  
@@ -59,10 +64,29 @@ export class ApiTreeParser extends Parser<string, ApiTree> {
     // Parse layers (optional)
     const layers = await this.parseLayers(layersDirectory);
 
+    // Parse OpenAPI spec (optional)
+    const openapi = await this.parseOpenApiSpec(rootDirectory);
+
     return {
       routes,
-      layers
+      layers,
+      openapi
     };
+  }
+
+  /**
+   * Parse OpenAPI specification if present in root directory
+   */
+  private async parseOpenApiSpec(rootDirectory: string) {
+    const openApiFile = path.join(rootDirectory, 'openapi.yaml');
+    
+    try {
+      await fs.access(openApiFile);
+      return await this.openApiParser.parse(openApiFile);
+    } catch {
+      // OpenAPI file is optional, silently ignore if not found
+      return undefined;
+    }
   }
 
   /**

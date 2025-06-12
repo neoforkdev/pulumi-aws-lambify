@@ -1,0 +1,62 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Pulumi AWS Lambify - Project Architecture
+
+## Overview
+This is a TypeScript project for parsing and managing AWS Lambda API structures. The codebase follows strict patterns for parsing, logging, and testing.
+
+## Core Architecture
+
+### Parser Pattern
+All parsers extend the abstract [Parser](mdc:src/core/parser/base.ts) base class:
+- **Base Class**: [Parser<TInput, TOutput>](mdc:src/core/parser/base.ts) handles logging, error handling, and structure
+- **Concrete Implementation**: [ApiTreeParser](mdc:src/core/parser/tree/parser.ts) parses API routes and layers
+- **Pattern**: Implement `parsingStep()` method, never override `parse()` method
+- **Logging**: Automatic logging with configurable JSON formatting via `stringify` parameter
+
+### Logger Configuration
+The [Logger](mdc:src/core/logger/logger.ts) class supports configurable JSON formatting:
+- `stringify: true` (default) - Pretty-printed JSON with indentation
+- `stringify: false` - Compact JSON for production/performance
+- Usage: `new Logger('prefix', stringify)` or `Logger.withPrefix('prefix', stringify)`
+
+### Error Handling
+Custom error hierarchy in [errors](mdc:src/core/model/error/errors.ts):
+- **LambifyError**: Base error with context and timestamps
+- **FileError**: Location-aware file errors
+- **Domain Errors**: DirectoryNotFoundError, MissingConfigFileError, etc.
+
+## Testing Strategy
+
+### Fixture-Based Testing
+- **Location**: [tests/fixtures/parser/directory/](mdc:tests/fixtures/parser/directory)
+- **Pattern**: Use real file structures instead of temporary files
+- **Coverage**: Comprehensive scenarios for API-only, layers-only, mixed structures, error cases
+- **Usage**: Reference fixtures in tests via `path.join(__dirname, 'tests/fixtures/parser/directory', 'fixture-name')`
+
+### Test Structure
+- **Unit Tests**: [tests/unit/](mdc:tests/unit) - organized by module
+- **Fixtures**: [tests/fixtures/](mdc:tests/fixtures) - test data separated from logic
+- **Pattern**: No temporary file creation, clean separation of concerns
+
+## Key Files
+
+### Entry Points
+- [src/core/index.ts](mdc:src/core/index.ts) - Main module exports
+- [playground.ts](mdc:playground.ts) - Live demonstrations and usage examples
+
+### Core Modules
+- [src/core/parser/](mdc:src/core/parser) - Parser implementations and base classes
+- [src/core/logger/](mdc:src/core/logger) - Logging functionality with JSON formatting
+- [src/core/model/](mdc:src/core/model) - Type definitions and error classes
+
+## Development Guidelines
+
+1. **New Parsers**: Extend [Parser](mdc:src/core/parser/base.ts) and implement only `parsingStep()`
+2. **Testing**: Add fixtures to [tests/fixtures/](mdc:tests/fixtures) and reference them in tests
+3. **Logging**: Use `Logger.withPrefix()` or `Logger.forClass()` with appropriate stringify setting
+4. **Errors**: Extend appropriate error classes from [errors.ts](mdc:src/core/model/error/errors.ts)
+5. **JSON Output**: Configure stringify parameter based on environment (pretty for dev, compact for prod)

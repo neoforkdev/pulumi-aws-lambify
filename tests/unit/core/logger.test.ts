@@ -1,94 +1,261 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { Logger } from '../../../src/core/logger/logger';
+import { Logger, LogLevel } from '../../../src/core/logger/logger';
 
 describe('Logger', () => {
   let consoleSpy: ReturnType<typeof vi.spyOn>;
+  const originalEnv = process.env.LAMBIFY_LOG_LEVEL;
+  const originalNoColor = process.env.NO_COLOR;
+  const originalLambifyNoColor = process.env.LAMBIFY_NO_COLOR;
+  const originalLambifyDisableColor = process.env.LAMBIFY_DISABLE_COLOR;
 
   beforeEach(() => {
     consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    // Clear any previous level settings
+    Logger.resetLevel(); // Reset global level
+    Logger.resetColor(); // Reset global color
+    delete process.env.LAMBIFY_LOG_LEVEL;
+    delete process.env.NO_COLOR;
+    delete process.env.LAMBIFY_NO_COLOR;
+    delete process.env.LAMBIFY_DISABLE_COLOR;
   });
 
   afterEach(() => {
     consoleSpy.mockRestore();
+    if (originalEnv !== undefined) {
+      process.env.LAMBIFY_LOG_LEVEL = originalEnv;
+    } else {
+      delete process.env.LAMBIFY_LOG_LEVEL;
+    }
+    if (originalNoColor !== undefined) {
+      process.env.NO_COLOR = originalNoColor;
+    } else {
+      delete process.env.NO_COLOR;
+    }
+    if (originalLambifyNoColor !== undefined) {
+      process.env.LAMBIFY_NO_COLOR = originalLambifyNoColor;
+    } else {
+      delete process.env.LAMBIFY_NO_COLOR;
+    }
+    if (originalLambifyDisableColor !== undefined) {
+      process.env.LAMBIFY_DISABLE_COLOR = originalLambifyDisableColor;
+    } else {
+      delete process.env.LAMBIFY_DISABLE_COLOR;
+    }
   });
 
   describe('Constructor', () => {
-    it('should create logger with manual prefix', () => {
+    it('should create logger with prefix', () => {
       const logger = new Logger('TestPrefix');
+      logger.setLevel(LogLevel.Info);
       logger.info('test');
 
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining('[TestPrefix] INFO: test'),
       );
     });
-
-    it('should create logger with auto-detected class name when no prefix provided', () => {
-      class TestClass {
-        logger = new Logger();
-
-        test() {
-          this.logger.info('test');
-        }
-      }
-
-      const instance = new TestClass();
-      instance.test();
-
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('INFO: test'),
-      );
-    });
   });
 
-  describe('Static Methods', () => {
-    it('should create logger with Logger.withPrefix', () => {
-      const logger = Logger.withPrefix('CustomPrefix');
-      logger.info('test');
-
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[CustomPrefix] INFO: test'),
-      );
-    });
-
-    it('should create logger with Logger.forClass', () => {
-      class TestClass {
-        logger = Logger.forClass(this);
-      }
-
-      const instance = new TestClass();
-      instance.logger.info('test');
-
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[TestClass] INFO: test'),
-      );
-    });
-  });
-
-  describe('Standard logging methods', () => {
-    it('should log info message', () => {
+  describe('Log Level Priority', () => {
+    it('should respect environment variable by default', () => {
+      process.env.LAMBIFY_LOG_LEVEL = 'info';
       const logger = new Logger('Test');
+      
+      logger.info('should log');
+      logger.debug('should not log');
+      
+      expect(consoleSpy).toHaveBeenCalledTimes(1);
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('INFO: should log')
+      );
+    });
+
+    it('should allow global level to override environment variable', () => {
+      process.env.LAMBIFY_LOG_LEVEL = 'error';
+      Logger.setLevel(LogLevel.Info);
+      
+      const logger = new Logger('Test');
+      logger.info('should log');
+      logger.debug('should not log');
+      
+      expect(consoleSpy).toHaveBeenCalledTimes(1);
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('INFO: should log')
+      );
+    });
+
+    it('should allow instance level to override global level', () => {
+      Logger.setLevel(LogLevel.Error);
+      
+      const logger = new Logger('Test');
+      logger.setLevel(LogLevel.Debug);
+      
+      logger.debug('should log');
+      logger.info('should also log');
+      
+      expect(consoleSpy).toHaveBeenCalledTimes(2);
+      expect(consoleSpy).toHaveBeenNthCalledWith(1,
+        expect.stringContaining('DEBUG: should log')
+      );
+      expect(consoleSpy).toHaveBeenNthCalledWith(2,
+        expect.stringContaining('INFO: should also log')
+      );
+    });
+
+    it('should allow different instance levels on different loggers', () => {
+      const logger1 = new Logger('Logger1');
+      const logger2 = new Logger('Logger2');
+      
+      logger1.setLevel(LogLevel.Error);
+      logger2.setLevel(LogLevel.Debug);
+      
+      logger1.info('should not log');
+      logger2.info('should log');
+      
+      expect(consoleSpy).toHaveBeenCalledTimes(1);
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('[Logger2] INFO: should log')
+      );
+    });
+  });
+
+  describe('Color Control Priority', () => {
+    beforeEach(() => {
+      Logger.setLevel(LogLevel.Debug); // Enable all logs for color testing
+    });
+
+    it('should respect environment variable by default', () => {
+      process.env.NO_COLOR = '1';
+      const logger = new Logger('Test');
+      
+      logger.error('error message');
+      
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.not.stringMatching(/\x1b\[31m.*\x1b\[0m/)
+      );
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('[Test] ERROR: error message')
+      );
+    });
+
+    it('should respect LAMBIFY_NO_COLOR environment variable', () => {
+      process.env.LAMBIFY_NO_COLOR = 'true';
+      const logger = new Logger('Test');
+      
+      logger.warning('warning message');
+      
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.not.stringMatching(/\x1b\[33m.*\x1b\[0m/)
+      );
+    });
+
+    it('should respect LAMBIFY_DISABLE_COLOR environment variable', () => {
+      process.env.LAMBIFY_DISABLE_COLOR = '1';
+      const logger = new Logger('Test');
+      
       logger.info('info message');
-
+      
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[Test] INFO: info message'),
+        expect.not.stringMatching(/\x1b\[34m.*\x1b\[0m/)
       );
     });
 
-    it('should log info message with arguments', () => {
+    it('should allow global color control to override environment variable', () => {
+      process.env.NO_COLOR = '1';
+      Logger.enableColor(); // Override env var
+      
       const logger = new Logger('Test');
-      logger.info('message', 123, 'arg');
-
+      logger.error('error message');
+      
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[Test] INFO: message 123 arg'),
+        expect.stringMatching(/\x1b\[31m.*ERROR.*\x1b\[0m/)
       );
+    });
+
+    it('should allow global color disable to override environment', () => {
+      // No env var set (colors enabled by default)
+      Logger.disableColor(); // Disable globally
+      
+      const logger = new Logger('Test');
+      logger.warning('warning message');
+      
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.not.stringMatching(/\x1b\[33m.*\x1b\[0m/)
+      );
+    });
+
+    it('should allow instance color control to override global', () => {
+      Logger.disableColor(); // Global disable
+      
+      const logger = new Logger('Test');
+      logger.enableColor(); // Instance enable
+      
+      logger.info('info message');
+      
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringMatching(/\x1b\[34m.*INFO.*\x1b\[0m/)
+      );
+    });
+
+    it('should allow different color settings on different loggers', () => {
+      const logger1 = new Logger('Logger1');
+      const logger2 = new Logger('Logger2');
+      
+      logger1.disableColor();
+      logger2.enableColor();
+      
+      logger1.error('error 1');
+      logger2.error('error 2');
+      
+      expect(consoleSpy).toHaveBeenNthCalledWith(1,
+        expect.not.stringMatching(/\x1b\[31m.*\x1b\[0m/)
+      );
+      expect(consoleSpy).toHaveBeenNthCalledWith(2,
+        expect.stringMatching(/\x1b\[31m.*ERROR.*\x1b\[0m/)
+      );
+    });
+
+    it('should disable colors in error details when colors are disabled', () => {
+      const logger = new Logger('Test');
+      logger.disableColor();
+      
+      const error = new Error('Test error');
+      logger.error('error occurred', error);
+      
+      expect(consoleSpy).toHaveBeenCalledTimes(2);
+      expect(consoleSpy).toHaveBeenNthCalledWith(2,
+        expect.not.stringMatching(/\x1b\[31m.*\x1b\[0m/)
+      );
+      expect(consoleSpy).toHaveBeenNthCalledWith(2,
+        expect.stringContaining('Error: Test error')
+      );
+    });
+
+    it('should enable colors in error details when colors are enabled', () => {
+      const logger = new Logger('Test');
+      logger.enableColor();
+      
+      const error = new Error('Test error');
+      logger.error('error occurred', error);
+      
+      expect(consoleSpy).toHaveBeenCalledTimes(2);
+      expect(consoleSpy).toHaveBeenNthCalledWith(2,
+        expect.stringMatching(/\x1b\[31m.*Error: Test error.*\x1b\[0m/)
+      );
+    });
+  });
+
+  describe('Logging Methods', () => {
+    beforeEach(() => {
+      // Set debug level for these tests
+      Logger.setLevel(LogLevel.Debug);
     });
 
     it('should log error message', () => {
       const logger = new Logger('Test');
-      logger.error('error message');
+      logger.error('error occurred');
 
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[Test] ERROR: error message'),
+        expect.stringContaining('[Test] ERROR: error occurred'),
       );
     });
 
@@ -104,16 +271,25 @@ describe('Logger', () => {
       );
       expect(consoleSpy).toHaveBeenNthCalledWith(
         2,
-        expect.stringContaining('Error details: Error: Test error'),
+        expect.stringContaining('Error: Test error'),
       );
     });
 
     it('should log warning message', () => {
       const logger = new Logger('Test');
-      logger.warning('warning message');
+      logger.warning('warning occurred');
 
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[Test] WARNING: warning message'),
+        expect.stringContaining('[Test] WARNING: warning occurred'),
+      );
+    });
+
+    it('should log info message', () => {
+      const logger = new Logger('Test');
+      logger.info('info message');
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('[Test] INFO: info message'),
       );
     });
 
@@ -125,80 +301,23 @@ describe('Logger', () => {
         expect.stringContaining('[Test] DEBUG: debug message'),
       );
     });
-  });
 
-  describe('child method', () => {
-    it('should create child logger with combined prefix', () => {
-      const logger = new Logger('Parent');
-      const child = logger.child('Child');
-      child.info('test');
-
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[Parent:Child] INFO: test'),
-      );
-    });
-
-    it('should create child logger from empty prefix', () => {
-      const logger = new Logger('');
-      const child = logger.child('Child');
-      child.info('test');
-
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[Child] INFO: test'),
-      );
-    });
-
-    it('should create nested child loggers', () => {
-      const logger = new Logger('Root');
-      const child = logger.child('Child');
-      const grandchild = child.child('GrandChild');
-      grandchild.info('test');
-
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[Root:Child:GrandChild] INFO: test'),
-      );
-    });
-  });
-
-  describe('Color formatting', () => {
-    it('should include color codes for error severity', () => {
+    it('should format objects', () => {
       const logger = new Logger('Test');
-      logger.error('error message');
+      const obj = { key: 'value', number: 42 };
+      logger.info('Object:', obj);
 
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringMatching(/\x1b\[31m.*ERROR.*\x1b\[0m/),
-      );
-    });
-
-    it('should include color codes for warning severity', () => {
-      const logger = new Logger('Test');
-      logger.warning('warning message');
-
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringMatching(/\x1b\[33m.*WARNING.*\x1b\[0m/),
-      );
-    });
-
-    it('should include color codes for info severity', () => {
-      const logger = new Logger('Test');
-      logger.info('info message');
-
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringMatching(/\x1b\[34m.*INFO.*\x1b\[0m/),
-      );
-    });
-
-    it('should include color codes for debug severity', () => {
-      const logger = new Logger('Test');
-      logger.debug('debug message');
-
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringMatching(/\x1b\[90m.*DEBUG.*\x1b\[0m/),
+        expect.stringContaining('Object: {\n  "key": "value",\n  "number": 42\n}'),
       );
     });
   });
 
   describe('Timestamp formatting', () => {
+    beforeEach(() => {
+      Logger.setLevel(LogLevel.Info); // Ensure info level logs
+    });
+
     it('should include timestamp in ISO format', () => {
       const logger = new Logger('Test');
       logger.info('test message');
@@ -210,6 +329,10 @@ describe('Logger', () => {
   });
 
   describe('Edge cases', () => {
+    beforeEach(() => {
+      Logger.setLevel(LogLevel.Info); // Ensure info level logs
+    });
+
     it('should handle empty messages', () => {
       const logger = new Logger('Test');
       logger.info('');
@@ -244,16 +367,6 @@ describe('Logger', () => {
 
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining('[Test] INFO: message {\n  "key": "value"\n}'),
-      );
-    });
-
-    it('should handle object arguments with compact JSON when stringify is false', () => {
-      const logger = new Logger('Test', false);
-      const obj = { key: 'value' };
-      logger.info('message', obj);
-
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[Test] INFO: message {"key":"value"}'),
       );
     });
   });

@@ -42,12 +42,16 @@
   "homepage": "https://github.com/neoforkdev/pulumi-aws-lambify#readme",
   "description": "",
   "dependencies": {
+    "@apidevtools/swagger-parser": "^11.0.1",
     "@pulumi/aws": "^6.81.0",
-    "@pulumi/pulumi": "^3.171.0"
+    "@pulumi/pulumi": "^3.171.0",
+    "yaml": "^2.8.0",
+    "zod": "^3.25.57"
   },
   "devDependencies": {
     "@eslint/js": "^9.28.0",
     "@types/node": "^22.15.21",
+    "@types/swagger-parser": "^4.0.3",
     "eslint": "^9.27.0",
     "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-import": "^2.31.0",

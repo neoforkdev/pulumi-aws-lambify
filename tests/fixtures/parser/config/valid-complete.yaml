@@ -1,0 +1,53 @@
+# ===============================
+# REQUIRED
+# ===============================
+
+# Runtime environment for the function
+runtime: python3.11
+
+# ===============================
+# OPTIONAL (WITH SMART DEFAULTS)
+# ===============================
+
+# Entrypoint to the Lambda function
+entry: handler.lambda_handler
+
+# Memory size in MB
+memory: 512
+
+# Timeout in seconds
+timeout: 10
+
+# ===============================
+# OPTIONAL CONFIGURATION
+# ===============================
+
+# List of environment variable names required by the function
+env:
+  - DATABASE_URL
+  - JWT_SECRET
+
+# Reference to shared Lambda layers by local name
+layers:
+  - shared-lib
+  - jwt-utils
+
+# Additional IAM permissions required by this function
+permissions:
+  - dynamodb:GetItem
+  - s3:PutObject
+
+# Key-value tags added to the Lambda function
+tags:
+  project: lambify
+  environment: dev
+
+# Optional override of function name
+name: get-user
+
+# Optional VPC configuration
+vpc:
+  securityGroupIds:
+    - sg-0123456789abcdef0
+  subnetIds:
+    - subnet-abcdef0123456789 

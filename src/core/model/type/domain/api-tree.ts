@@ -1,5 +1,3 @@
-export type FilePath = string;
-
 /**
  * Represents the file structure for an API endpoint within an API tree.
  *
@@ -10,10 +8,10 @@ export type FilePath = string;
  * - dependenciesFile: "v1/hello/requirements.txt"
  */
 export type ApiRoute = {
-  readonly route: FilePath;
-  readonly handlerFile: FilePath;
-  readonly configFile: FilePath;
-  readonly dependenciesFile?: FilePath;
+  readonly route: string;
+  readonly handlerFile: string;
+  readonly configFile: string;
+  readonly dependenciesFile?: string;
 };
 
 /**
@@ -26,14 +24,23 @@ export type ApiRoute = {
  */
 export type ApiLayer = {
   readonly name: string;
-  readonly configFile: FilePath;
-  readonly dependenciesFile?: FilePath;
+  readonly configFile: string;
+  readonly dependenciesFile?: string;
 };
 
 /**
- * Complete API tree structure containing both routes and layers.
+ * OpenAPI specification content and metadata
+ */
+export type OpenApiSpec = {
+  readonly filePath: string;
+  readonly spec: any; // The parsed OpenAPI specification object
+};
+
+/**
+ * Complete API tree structure containing routes, layers, and optional OpenAPI spec.
  */
 export type ApiTree = {
   readonly routes: readonly ApiRoute[];
   readonly layers: readonly ApiLayer[];
+  readonly openapi?: OpenApiSpec;
 };

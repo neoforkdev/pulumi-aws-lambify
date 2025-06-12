@@ -10,8 +10,8 @@ import { Logger } from '../logger/logger';
 export abstract class Parser<TInput, TOutput> {
   protected readonly logger: Logger;
 
-  constructor(loggerPrefix?: string, stringify: boolean = true) {
-    this.logger = loggerPrefix ? Logger.withPrefix(loggerPrefix, stringify) : Logger.forClass(this, stringify);
+  constructor(loggerPrefix: string) {
+    this.logger = new Logger(loggerPrefix);
   }
 
   /**
