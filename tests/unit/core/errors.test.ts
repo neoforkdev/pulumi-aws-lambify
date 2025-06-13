@@ -1,21 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { LambifyError, FileError } from '../../../src/core/model/type/core/errors';
 
-// Concrete implementations for testing abstract classes
+// Concrete implementations for testing classes
 class TestLambifyError extends LambifyError {
-  constructor(message: string, context: Record<string, unknown> = {}, cause?: Error) {
-    super(message, context, cause);
-  }
-
-  protected getFormattedMessage(): string {
-    return JSON.stringify({
-      name: this.name,
-      message: this.message,
-      context: this.context,
-      timestamp: this.timestamp,
-      cause: this.cause?.message,
-      stack: this.stack
-    }, null, 2);
+  constructor(message: string, context: Record<string, unknown> = {}, cause?: Error, suggestion?: string) {
+    super(message, context, cause, suggestion);
   }
 }
 
@@ -25,91 +14,94 @@ class TestFileError extends FileError {
     filePath: string,
     location?: string,
     context: Record<string, unknown> = {},
-    cause?: Error
+    cause?: Error,
+    suggestion?: string
   ) {
-    super(message, filePath, location, context, cause);
-  }
-
-  protected getFormattedMessage(): string {
-    return JSON.stringify({
-      name: this.name,
-      message: this.message,
-      filePath: this.filePath,
-      location: this.location,
-      context: this.context,
-      timestamp: this.timestamp,
-      cause: this.cause?.message,
-      stack: this.stack
-    }, null, 2);
+    super(message, filePath, location, context, cause, suggestion);
   }
 }
 
 describe('LambifyError', () => {
-  it('should create error with basic properties', () => {
+  it('should create error with basic information', () => {
     const error = new TestLambifyError('Test error');
 
     expect(error.name).toBe('TestLambifyError');
     expect(error.message).toBe('Test error');
+    expect(error.timestamp).toBeDefined();
     expect(error.context).toEqual({});
-    expect(typeof error.timestamp).toBe('string');
     expect(error.cause).toBeUndefined();
+    expect(error.suggestion).toBeUndefined();
   });
 
-  it('should create error with context', () => {
-    const context = { userId: 123, operation: 'parse' };
-    const error = new TestLambifyError('Test error', context);
+  it('should create error with context and cause', () => {
+    const context = { operation: 'test' };
+    const cause = new Error('Original error');
+    const error = new TestLambifyError('Test error', context, cause);
 
     expect(error.context).toEqual(context);
-    expect(error.message).toBe('Test error');
-  });
-
-  it('should create error with cause', () => {
-    const cause = new Error('Original error');
-    const error = new TestLambifyError('Test error', {}, cause);
-
     expect(error.cause).toBe(cause);
-    expect(error.message).toBe('Test error');
   });
 
-  it('should inherit from Error', () => {
+  it('should create error with suggestion', () => {
+    const error = new TestLambifyError('Test error', {}, undefined, 'Fix the issue');
+
+    expect(error.suggestion).toBe('Fix the issue');
+  });
+
+  it('should set proper prototype chain for instanceof checks', () => {
     const error = new TestLambifyError('Test error');
 
     expect(error).toBeInstanceOf(Error);
     expect(error).toBeInstanceOf(LambifyError);
+    expect(error).toBeInstanceOf(TestLambifyError);
+  });
+
+  it('should have timestamp as ISO string', () => {
+    const error = new TestLambifyError('Test error');
+
+    expect(typeof error.timestamp).toBe('string');
+    expect(new Date(error.timestamp).toISOString()).toBe(error.timestamp);
   });
 
   describe('toString()', () => {
     it('should return formatted message', () => {
+      const error = new TestLambifyError('Test error');
+      const formatted = error.toString();
+
+      expect(formatted).toContain('error:');
+      expect(formatted).toContain('Test error');
+    });
+
+    it('should include suggestion when present', () => {
+      const error = new TestLambifyError('Test error', {}, undefined, 'Try this fix');
+      const formatted = error.toString();
+
+      expect(formatted).toContain('help: Try this fix');
+    });
+  });
+
+  describe('toJSON()', () => {
+    it('should return structured error information', () => {
       const context = { test: 'value' };
       const cause = new Error('Original error');
-      const error = new TestLambifyError('Test error', context, cause);
+      const error = new TestLambifyError('Test error', context, cause, 'Fix it');
 
-      const result = error.toString();
-      const parsed = JSON.parse(result);
+      const json = error.toJSON() as any;
 
-      expect(parsed.name).toBe('TestLambifyError');
-      expect(parsed.message).toBe('Test error');
-      expect(parsed.context).toEqual(context);
-      expect(parsed.cause).toBe('Original error');
-      expect(parsed.timestamp).toBeDefined();
-      expect(parsed.stack).toBeDefined();
+      expect(json.name).toBe('TestLambifyError');
+      expect(json.message).toBe('Test error');
+      expect(json.context).toEqual(context);
+      expect(json.suggestion).toBe('Fix it');
+      expect(json.cause).toBe('Original error');
+      expect(json.timestamp).toBeDefined();
+      expect(json.stack).toBeDefined();
     });
 
     it('should handle error without cause', () => {
       const error = new TestLambifyError('Test error');
+      const json = error.toJSON() as any;
 
-      const result = error.toString();
-      const parsed = JSON.parse(result);
-
-      expect(parsed.cause).toBeUndefined();
-    });
-
-    it('should format JSON with proper indentation', () => {
-      const error = new TestLambifyError('Test error');
-      const result = error.toString();
-
-      expect(result).toContain('{\n');
-      expect(result).toContain('  "name":');
+      expect(json.cause).toBeUndefined();
     });
   });
 });

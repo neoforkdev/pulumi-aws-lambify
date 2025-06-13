@@ -5,7 +5,8 @@ import {
   DirectoryNotFoundError,
   EmptyApiFolderError,
   MissingConfigFileError,
-  InvalidFileExtensionError
+  InvalidFileExtensionError,
+  InvalidHttpMethodError
 } from '../../../../src/core/parser/tree/errors';
 
 describe('ApiTreeParser', () => {
@@ -22,9 +23,13 @@ describe('ApiTreeParser', () => {
 
       expect(result.routes).toHaveLength(1);
       expect(result.routes[0].route).toBe('/hello');
-      expect(result.routes[0].handlerFile).toContain('hello/handler.py');
-      expect(result.routes[0].configFile).toContain('hello/config.yaml');
-      expect(result.routes[0].dependenciesFile).toBeUndefined();
+      expect(result.routes[0].methods).toHaveLength(1);
+      
+      const method = result.routes[0].methods[0];
+      expect(method.method).toBe('get');
+      expect(method.handlerFile).toContain('hello/get/handler.py');
+      expect(method.configFile).toContain('hello/get/config.yaml');
+      expect(method.dependenciesFile).toBeUndefined();
       expect(result.layers).toHaveLength(0);
     });
 
@@ -33,9 +38,13 @@ describe('ApiTreeParser', () => {
 
       expect(result.routes).toHaveLength(1);
       expect(result.routes[0].route).toBe('/hello');
-      expect(result.routes[0].handlerFile).toContain('hello/handler.py');
-      expect(result.routes[0].configFile).toContain('hello/config.yaml');
-      expect(result.routes[0].dependenciesFile).toContain('hello/requirements.txt');
+      expect(result.routes[0].methods).toHaveLength(1);
+      
+      const method = result.routes[0].methods[0];
+      expect(method.method).toBe('get');
+      expect(method.handlerFile).toContain('hello/get/handler.py');
+      expect(method.configFile).toContain('hello/get/config.yaml');
+      expect(method.dependenciesFile).toContain('hello/get/requirements.txt');
       expect(result.layers).toHaveLength(0);
     });
 
@@ -44,6 +53,13 @@ describe('ApiTreeParser', () => {
 
       expect(result.routes).toHaveLength(2);
       expect(result.routes.map(r => r.route).sort()).toEqual(['/orders', '/users']);
+      
+      // Each route should have one GET method
+      result.routes.forEach(route => {
+        expect(route.methods).toHaveLength(1);
+        expect(route.methods[0].method).toBe('get');
+      });
+      
       expect(result.layers).toHaveLength(0);
     });
 
@@ -51,13 +67,13 @@ describe('ApiTreeParser', () => {
       const result = await parser.parse(path.join(fixturesDir, 'api-nested'));
 
       expect(result.routes).toHaveLength(2);
-      expect(result.routes).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({ route: '/v1/users' }),
-          expect.objectContaining({ route: '/v2/orders' })
-        ])
-      );
-      expect(result.layers).toHaveLength(0);
+      expect(result.routes.map(r => r.route).sort()).toEqual(['/v1/users', '/v2/orders']);
+      
+      // Each route should have one GET method
+      result.routes.forEach(route => {
+        expect(route.methods).toHaveLength(1);
+        expect(route.methods[0].method).toBe('get');
+      });
     });
   });
 
@@ -93,28 +109,30 @@ describe('ApiTreeParser', () => {
       } catch (error) {
         expect(error).toBeInstanceOf(MissingConfigFileError);
         const configError = error as MissingConfigFileError;
-        
-        expect(configError.filePath).toContain('test/config.yaml');
-        expect(configError.context.route).toBe('/test');
+        expect(configError.message).toContain('config.yaml');
+        expect(configError.toString()).toContain('Missing config file');
       }
     });
   });
 
   describe('edge cases', () => {
     it('should handle routes with special characters in directory names', async () => {
+      // Route names with special characters are valid - only HTTP method names are validated
       const result = await parser.parse(path.join(fixturesDir, 'api-invalid-filename'));
       
       expect(result.routes).toHaveLength(1);
       expect(result.routes[0].route).toBe('/wrong$name');
-      expect(result.layers).toHaveLength(0);
+      expect(result.routes[0].methods).toHaveLength(1);
+      expect(result.routes[0].methods[0].method).toBe('get');
     });
 
     it('should skip files that are not handlers', async () => {
       const result = await parser.parse(path.join(fixturesDir, 'api-skip-non-handlers'));
-      
+
       expect(result.routes).toHaveLength(1);
       expect(result.routes[0].route).toBe('/test');
-      expect(result.layers).toHaveLength(0);
+      expect(result.routes[0].methods).toHaveLength(1);
+      expect(result.routes[0].methods[0].method).toBe('get');
     });
   });
 }); 

@@ -1,9 +1,9 @@
 /**
- * Core error classes for the Lambify system
+ * Core error classes for the Jetway system
  */
 
 /**
- * Base error class for all Lambify-related errors
+ * Base error class for all Jetway-related errors
  * Provides structured error information with context and automatic formatting
  */
 export abstract class LambifyError extends Error {
@@ -11,18 +11,27 @@ export abstract class LambifyError extends Error {
   public readonly context: Record<string, unknown>;
   public readonly cause?: Error;
   public readonly suggestion?: string;
+  protected readonly errorType: string;
+  protected readonly description: string;
+  protected readonly path: string;
 
   constructor(
     message: string,
     context: Record<string, unknown> = {},
     cause?: Error,
-    suggestion?: string
+    suggestion?: string,
+    errorType?: string,
+    description?: string,
+    path?: string
   ) {
     super(message);
     this.name = this.constructor.name;
     this.timestamp = new Date().toISOString();
     this.context = context;
     this.suggestion = suggestion;
+    this.errorType = errorType || this.getDefaultErrorType();
+    this.description = description || this.getDefaultDescription();
+    this.path = path || this.getDefaultPath();
     
     if (cause) {
       this.cause = cause;
@@ -33,9 +42,38 @@ export abstract class LambifyError extends Error {
   }
 
   /**
-   * Abstract method that subclasses must implement to provide formatted error message
+   * Get default error type - can be overridden by subclasses
    */
-  protected abstract getFormattedMessage(): string;
+  protected getDefaultErrorType(): string {
+    return this.constructor.name.replace(/Error$/, '').replace(/([A-Z])/g, ' $1').trim().toLowerCase();
+  }
+
+  /**
+   * Get default description - can be overridden by subclasses
+   */
+  protected getDefaultDescription(): string {
+    return this.message;
+  }
+
+  /**
+   * Get default path - can be overridden by subclasses
+   */
+  protected getDefaultPath(): string {
+    return this.context.directory as string || this.context.path as string || 'unknown';
+  }
+
+  /**
+   * Default implementation of getFormattedMessage using ErrorFormatter
+   * Child classes can override this if they need custom formatting
+   */
+  protected getFormattedMessage(): string {
+    return ErrorFormatter.formatSimpleError(
+      this.errorType,
+      this.path,
+      this.description,
+      this.suggestion
+    );
+  }
 
   /**
    * Returns formatted error for logging - automatically uses enhanced formatting
@@ -62,7 +100,7 @@ export abstract class LambifyError extends Error {
 
 /**
  * Base error class for file-related operations
- * Extends LambifyError with file-specific context
+ * Extends LambifyError with file-specific context and formatting
  */
 export abstract class FileError extends LambifyError {
   public readonly filePath: string;
@@ -74,11 +112,35 @@ export abstract class FileError extends LambifyError {
     location?: string,
     context: Record<string, unknown> = {},
     cause?: Error,
-    suggestion?: string
+    suggestion?: string,
+    errorType?: string,
+    description?: string
   ) {
-    super(message, { ...context, filePath }, cause, suggestion);
+    super(
+      message, 
+      { ...context, filePath }, 
+      cause, 
+      suggestion, 
+      errorType, 
+      description, 
+      filePath
+    );
     this.filePath = filePath;
     this.location = location || filePath;
+  }
+
+  /**
+   * Default path for file errors is the file path
+   */
+  protected getDefaultPath(): string {
+    return this.filePath;
+  }
+
+  /**
+   * Default description for file errors includes file path
+   */
+  protected getDefaultDescription(): string {
+    return this.cause?.message || this.message;
   }
 }
 
@@ -240,7 +302,7 @@ export abstract class ErrorFormatter {
   }
 
   /**
-   * Create enhanced error context for validation errors with suggestion
+   * Format validation errors with multiple issues
    */
   static formatValidationError(
     filePath: string,
@@ -248,20 +310,17 @@ export abstract class ErrorFormatter {
     source?: string,
     suggestion?: string
   ): string {
-    const lineNumWidth = Math.max(3, String(issues.length).length);
-    
-    let result = `error: Config validation failed\n`;
-    result += `  --> ${filePath}\n`;
+    const lineNumWidth = 3;
+    let result = `error: Config validation failed\n  --> ${filePath}\n`;
     result += `${' '.repeat(lineNumWidth)} |\n`;
     
     issues.forEach((issue, index) => {
-      const fieldPath = issue.path.length > 0 ? issue.path.join('.') : 'root';
-      result += `${String(index + 1).padStart(lineNumWidth)} | ${fieldPath}: ${issue.message}\n`;
+      const pathStr = issue.path.length > 0 ? issue.path.join('.') : 'Required';
+      result += `${' '.repeat(lineNumWidth)} | ${index + 1}. ${pathStr}: ${issue.message}\n`;
     });
     
     result += `${' '.repeat(lineNumWidth)} |`;
     
-    // Add suggestion if available
     if (suggestion) {
       result += `\n${' '.repeat(lineNumWidth)} = help: ${suggestion}`;
     }

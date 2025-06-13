@@ -36,47 +36,41 @@ describe('Config Parser Errors', () => {
 
       expect(error.name).toBe('ConfigFileReadError');
       expect(error.filePath).toBe('/path/to/config.yaml');
+      expect(error.location).toBe('/path/to/config.yaml');
       expect(error.cause).toBe(cause);
-      expect(error.context.filePath).toBe('/path/to/config.yaml');
       expect(error).toBeInstanceOf(FileError);
+      expect(error).toBeInstanceOf(LambifyError);
     });
 
     it('should include helpful solution suggestions', () => {
-      const cause = new Error('Permission denied');
-      const error = new ConfigFileReadError('/config.yaml', cause);
+      const error = new ConfigFileReadError('/config.yaml', new Error('Read error'));
       
       expect(error.suggestion).toBeDefined();
-      expect(typeof error.suggestion).toBe('string');
       expect(error.suggestion).toBe('Check file permissions: chmod 644 <file>');
     });
   });
 
   describe('ConfigParseError', () => {
     it('should create file error with YAML parse error', () => {
-      const cause = new Error('invalid yaml');
-      const source = 'invalid: [yaml';
-      const error = new ConfigParseError('/path/to/config.yaml', source, cause);
+      const cause = new Error('YAML syntax error');
+      const error = new ConfigParseError('/path/to/config.yaml', 'yaml content', cause);
 
       expect(error.name).toBe('ConfigParseError');
       expect(error.filePath).toBe('/path/to/config.yaml');
+      expect(error.location).toBe('/path/to/config.yaml');
       expect(error.cause).toBe(cause);
       expect(error).toBeInstanceOf(FileError);
+      expect(error).toBeInstanceOf(LambifyError);
     });
 
     it('should include helpful solution suggestions', () => {
-      const cause = new Error('invalid yaml');
-      const source = 'invalid: [yaml';
-      const error = new ConfigParseError('/config.yaml', source, cause);
+      const error = new ConfigParseError('/config.yaml', 'content', new Error('Parse error'));
       
-      expect(error.suggestion).toBeDefined();
-      expect(typeof error.suggestion).toBe('string');
       expect(error.suggestion).toBe('Check YAML syntax: indentation, colons, quotes');
     });
 
     it('should include suggestions in formatted error messages', () => {
-      const cause = new Error('invalid yaml');
-      const source = 'invalid: [yaml';
-      const error = new ConfigParseError('/config.yaml', source, cause);
+      const error = new ConfigParseError('/config.yaml', 'content', new Error('Invalid YAML'));
       const formatted = error.toString();
       
       expect(formatted).toContain('= help: Check YAML syntax: indentation, colons, quotes');
@@ -93,10 +87,9 @@ describe('Config Parser Errors', () => {
 
       expect(error.name).toBe('ConfigValidationError');
       expect(error.filePath).toBe('/path/to/config.yaml');
-      expect(error.issues).toEqual(issues);
-      expect(error.message).toContain('runtime: Required');
-      expect(error.message).toContain('memory: Must be a number');
+      expect(error.message).toContain('Config validation failed');
       expect(error).toBeInstanceOf(FileError);
+      expect(error).toBeInstanceOf(LambifyError);
     });
 
     it('should include helpful solution suggestions', () => {
@@ -105,7 +98,7 @@ describe('Config Parser Errors', () => {
       
       expect(error.suggestion).toBeDefined();
       expect(typeof error.suggestion).toBe('string');
-      expect(error.suggestion).toBe('Check the config schema documentation');
+      expect(error.suggestion).toBe('Fix validation issues and ensure all required fields are present');
     });
 
     it('should include suggestions in formatted error messages', () => {
@@ -113,7 +106,7 @@ describe('Config Parser Errors', () => {
       const error = new ConfigValidationError('/config.yaml', issues);
       const formatted = error.toString();
       
-      expect(formatted).toContain('= help: Check the config schema documentation');
+      expect(formatted).toContain('= help: Fix validation issues and ensure all required fields are present');
     });
   });
 

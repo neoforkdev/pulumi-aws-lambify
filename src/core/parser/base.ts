@@ -20,7 +20,7 @@ export abstract class Parser<TInput, TOutput> {
    * 
    * @param input The input to parse
    * @returns Promise resolving to the parsed output
-   * @throws {LambifyError} Specific error types based on parser implementation
+   * @throws {LambifyError} Specific error types based on parser implementation (Jetway)
    */
   async parse(input: TInput): Promise<TOutput> {
     this.logger.info('Starting parse operation');
@@ -44,7 +44,7 @@ export abstract class Parser<TInput, TOutput> {
    * 
    * @param input The input to parse
    * @returns Promise resolving to the parsed output
-   * @throws {LambifyError} Specific error types based on parser implementation
+   * @throws {LambifyError} Specific error types based on parser implementation (Jetway)
    */
   abstract parsingStep(input: TInput): Promise<TOutput>;
 } 

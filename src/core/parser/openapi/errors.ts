@@ -32,22 +32,18 @@ export class OpenApiFileNotFoundError extends FileError {
 export class OpenApiParseError extends FileError {
   constructor(filePath: string, cause: Error) {
     const suggestion = 'Validate OpenAPI syntax and schema compliance';
+    const errorType = 'Invalid OpenAPI specification';
+    const description = cause.message || 'Unknown parsing error';
+    
     super(
       `Failed to parse OpenAPI file: ${filePath}`,
       filePath,
       filePath,
       { filePath },
       cause,
-      suggestion
-    );
-  }
-
-  protected getFormattedMessage(): string {
-    return ErrorFormatter.formatSimpleError(
-      'Invalid OpenAPI specification',
-      this.filePath,
-      this.cause?.message || 'Unknown parsing error',
-      this.suggestion
+      suggestion,
+      errorType,
+      description
     );
   }
 }
@@ -58,22 +54,18 @@ export class OpenApiParseError extends FileError {
 export class OpenApiFileReadError extends FileError {
   constructor(filePath: string, cause: Error) {
     const suggestion = 'Check file permissions and accessibility';
+    const errorType = 'OpenAPI file read error';
+    const description = cause.message || 'Unknown read error';
+    
     super(
       `Failed to read OpenAPI file: ${filePath}`,
       filePath,
       filePath,
       { filePath },
       cause,
-      suggestion
-    );
-  }
-
-  protected getFormattedMessage(): string {
-    return ErrorFormatter.formatSimpleError(
-      'OpenAPI file read error',
-      this.filePath,
-      this.cause?.message || 'Unknown read error',
-      this.suggestion
+      suggestion,
+      errorType,
+      description
     );
   }
 } 

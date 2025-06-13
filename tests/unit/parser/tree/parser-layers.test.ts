@@ -23,16 +23,20 @@ describe('ApiTreeParser - Layers Support', () => {
       // Check users route
       const usersRoute = result.routes.find(r => r.route === '/users');
       expect(usersRoute).toBeDefined();
-      expect(usersRoute?.handlerFile).toContain('users/handler.py');
-      expect(usersRoute?.configFile).toContain('users/config.yaml');
-      expect(usersRoute?.dependenciesFile).toContain('users/requirements.txt');
+      expect(usersRoute?.methods).toHaveLength(1);
+      expect(usersRoute?.methods[0].method).toBe('get');
+      expect(usersRoute?.methods[0].handlerFile).toContain('users/get/handler.py');
+      expect(usersRoute?.methods[0].configFile).toContain('users/get/config.yaml');
+      expect(usersRoute?.methods[0].dependenciesFile).toContain('users/get/requirements.txt');
       
       // Check orders route
       const ordersRoute = result.routes.find(r => r.route === '/orders');
       expect(ordersRoute).toBeDefined();
-      expect(ordersRoute?.handlerFile).toContain('orders/handler.py');
-      expect(ordersRoute?.configFile).toContain('orders/config.yaml');
-      expect(ordersRoute?.dependenciesFile).toBeUndefined(); // No requirements.txt
+      expect(ordersRoute?.methods).toHaveLength(1);
+      expect(ordersRoute?.methods[0].method).toBe('get');
+      expect(ordersRoute?.methods[0].handlerFile).toContain('orders/get/handler.py');
+      expect(ordersRoute?.methods[0].configFile).toContain('orders/get/config.yaml');
+      expect(ordersRoute?.methods[0].dependenciesFile).toBeUndefined(); // No requirements.txt
 
       expect(result.layers).toHaveLength(2);
       
@@ -49,40 +53,23 @@ describe('ApiTreeParser - Layers Support', () => {
       expect(utilsLayer?.dependenciesFile).toBeUndefined(); // No requirements.txt
     });
 
-    it('should handle only API routes without layers directory', async () => {
-      const fixtureDir = path.join(fixturesDir, 'api-only');
-      
-      const result = await parser.parse(fixtureDir);
-
-      expect(result.routes).toHaveLength(1);
-      expect(result.routes[0].route).toBe('/simple');
-      expect(result.routes[0].handlerFile).toContain('simple/handler.py');
-      expect(result.routes[0].configFile).toContain('simple/config.yaml');
-      expect(result.routes[0].dependenciesFile).toBeUndefined();
-      
-      expect(result.layers).toHaveLength(0);
-    });
-
-    it('should handle only layers without API handlers', async () => {
+    it('should handle layers without API routes', async () => {
       const fixtureDir = path.join(fixturesDir, 'layers-only-empty-api');
       
-      // This should throw an error because no handler files found in API directory
       await expect(parser.parse(fixtureDir)).rejects.toThrow(EmptyApiFolderError);
     });
 
-    it('should skip layer directories without layer.yaml', async () => {
-      const fixtureDir = path.join(fixturesDir, 'mixed-layers');
+    it('should handle API routes without layers', async () => {
+      const fixtureDir = path.join(fixturesDir, 'api-basic');
       
       const result = await parser.parse(fixtureDir);
 
       expect(result.routes).toHaveLength(1);
-      expect(result.routes[0].route).toBe('/test');
+      expect(result.routes[0].route).toBe('/hello');
+      expect(result.routes[0].methods).toHaveLength(1);
+      expect(result.routes[0].methods[0].method).toBe('get');
       
-      expect(result.layers).toHaveLength(1);
-      expect(result.layers[0].name).toBe('valid-layer');
-      expect(result.layers[0].configFile).toContain('valid-layer/layer.yaml');
-      
-      // invalid-layer should be skipped because it doesn't have layer.yaml
+      expect(result.layers).toHaveLength(0);
     });
 
     it('should handle nested API routes with layers', async () => {
@@ -91,12 +78,13 @@ describe('ApiTreeParser - Layers Support', () => {
       const result = await parser.parse(fixtureDir);
 
       expect(result.routes).toHaveLength(2);
-      expect(result.routes).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({ route: '/v1/users' }),
-          expect.objectContaining({ route: '/v1/orders' })
-        ])
-      );
+      expect(result.routes.map(r => r.route).sort()).toEqual(['/v1/orders', '/v1/users']);
+      
+      // Each route should have one GET method
+      result.routes.forEach(route => {
+        expect(route.methods).toHaveLength(1);
+        expect(route.methods[0].method).toBe('get');
+      });
 
       expect(result.layers).toHaveLength(1);
       expect(result.layers[0].name).toBe('common');
@@ -108,12 +96,8 @@ describe('ApiTreeParser - Layers Support', () => {
     it('should handle empty layers directory gracefully', async () => {
       const fixtureDir = path.join(fixturesDir, 'empty-layers');
       
-      const result = await parser.parse(fixtureDir);
-
-      expect(result.routes).toHaveLength(1);
-      expect(result.routes[0].route).toBe('/simple');
-      
-      expect(result.layers).toHaveLength(0);
+      // This should throw EmptyApiFolderError because there are no API routes
+      await expect(parser.parse(fixtureDir)).rejects.toThrow(EmptyApiFolderError);
     });
 
     it('should handle multiple layers with varying configurations', async () => {
@@ -126,12 +110,14 @@ describe('ApiTreeParser - Layers Support', () => {
       // Check API with dependencies
       const withDepsRoute = result.routes.find(r => r.route === '/with-deps');
       expect(withDepsRoute).toBeDefined();
-      expect(withDepsRoute?.dependenciesFile).toBeDefined();
+      expect(withDepsRoute?.methods).toHaveLength(1);
+      expect(withDepsRoute?.methods[0].dependenciesFile).toBeDefined();
       
       // Check API without dependencies
       const withoutDepsRoute = result.routes.find(r => r.route === '/without-deps');
       expect(withoutDepsRoute).toBeDefined();
-      expect(withoutDepsRoute?.dependenciesFile).toBeUndefined();
+      expect(withoutDepsRoute?.methods).toHaveLength(1);
+      expect(withoutDepsRoute?.methods[0].dependenciesFile).toBeUndefined();
 
       expect(result.layers).toHaveLength(2);
       

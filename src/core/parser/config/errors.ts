@@ -1,3 +1,4 @@
+// Core error classes for Jetway
 import { LambifyError, FileError, ErrorFormatter } from '../../model/type/core/errors';
 import { z } from 'zod';
 
@@ -7,22 +8,18 @@ import { z } from 'zod';
 export class ConfigFileNotFoundError extends FileError {
   constructor(filePath: string) {
     const suggestion = 'Create the config file';
+    const errorType = 'File not found';
+    const description = 'File does not exist or cannot be accessed';
+    
     super(
       `Config file not found: ${filePath}`,
       filePath,
       filePath,
       { filePath },
       undefined,
-      suggestion
-    );
-  }
-
-  protected getFormattedMessage(): string {
-    return ErrorFormatter.formatSimpleError(
-      'File not found',
-      this.filePath,
-      'File does not exist or cannot be accessed',
-      this.suggestion
+      suggestion,
+      errorType,
+      description
     );
   }
 }
@@ -33,22 +30,18 @@ export class ConfigFileNotFoundError extends FileError {
 export class ConfigFileReadError extends FileError {
   constructor(filePath: string, cause: Error) {
     const suggestion = 'Check file permissions: chmod 644 <file>';
+    const errorType = 'File read error';
+    const description = cause.message || 'Unknown read error';
+    
     super(
       `Failed to read config file: ${filePath}`,
       filePath,
       filePath,
       { filePath },
       cause,
-      suggestion
-    );
-  }
-
-  protected getFormattedMessage(): string {
-    return ErrorFormatter.formatSimpleError(
-      'File read error',
-      this.filePath,
-      this.cause?.message || 'Unknown read error',
-      this.suggestion
+      suggestion,
+      errorType,
+      description
     );
   }
 }
@@ -72,6 +65,7 @@ export class ConfigParseError extends FileError {
     this.source = source;
   }
 
+  // Override the default formatting to use file parsing error format
   protected getFormattedMessage(): string {
     return ErrorFormatter.formatFileParsingError(
       this.filePath,
@@ -87,33 +81,28 @@ export class ConfigParseError extends FileError {
  * Error thrown when config validation fails with enhanced formatting
  */
 export class ConfigValidationError extends FileError {
-  public readonly issues: Array<{ path: string[]; message: string }>;
-  private readonly source?: string;
+  private readonly issues: Array<{ path: string[]; message: string }>;
 
-  constructor(
-    filePath: string, 
-    issues: Array<{ path: string[]; message: string }>,
-    source?: string
-  ) {
-    const issueMessages = issues.map(issue => 
-      issue.path.length > 0 ? `${issue.path.join('.')}: ${issue.message}` : issue.message
-    ).join(', ');
-    
-    const suggestion = 'Check the config schema documentation';
-    
+  constructor(filePath: string, issues: Array<{ path: string[]; message: string }>) {
+    const suggestion = 'Fix validation issues and ensure all required fields are present';
     super(
-      `Config validation failed: ${issueMessages}`,
+      `Config validation failed: ${filePath}`,
       filePath,
       filePath,
-      { filePath },
+      { filePath, issues },
       undefined,
       suggestion
     );
     this.issues = issues;
-    this.source = source;
   }
 
+  // Override the default formatting to use validation error format
   protected getFormattedMessage(): string {
-    return ErrorFormatter.formatValidationError(this.filePath, this.issues, this.source, this.suggestion);
+    return ErrorFormatter.formatValidationError(
+      this.filePath,
+      this.issues,
+      undefined,
+      this.suggestion
+    );
   }
 } 

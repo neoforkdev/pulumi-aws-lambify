@@ -1,19 +1,21 @@
 import * as path from 'path';
 import { promises as fs } from 'fs';
 
-import type { ApiTree, ApiRoute, ApiLayer } from '../../model/type/domain/api-tree';
+import type { ApiTree, ApiRoute, ApiMethod, ApiLayer, OpenApiSpec } from '../../model/type/domain/api-tree';
 import { Parser } from '../base';
 import { OpenApiParser } from '../openapi';
-import { findFileRecursively, findLayerDirectories } from './discovery';
-import { MissingConfigFileError, InvalidFileExtensionError, MissingLayerConfigFileError } from './errors';
-import { isFileExtensionValid, RequirementsFile, SupportedFileExtension, ConfigFiles } from './validator';
+import { discoverApiRoutes, findLayerDirectories } from './discovery';
+import { MissingConfigFileError, InvalidFileExtensionError, InvalidHttpMethodError, MissingLayerConfigFileError } from './errors';
+import { isFileExtensionValid, isValidHttpMethod, RequirementsFile, SupportedFileExtension, ConfigFiles } from './validator';
 
 /**
  * Parser for discovering and parsing API tree from a directory structure.
  * 
- * Searches for API routes (in /api directory), layers (in /layers directory),
- * and optionally OpenAPI specifications (openapi.yaml in root).
- * API routes require handler files and config.yaml, layers require layer.yaml.
+ * Searches for API routes (in /api directory) with HTTP method subdirectories,
+ * layers (in /layers directory), and optionally OpenAPI specifications.
+ * 
+ * New structure: api/[route]/[method]/handler.py
+ * Each method directory contains: config.yaml, handler.py, optional openapi.yaml, optional requirements.txt
  * 
  * @example
  * ```typescript
@@ -21,13 +23,22 @@ import { isFileExtensionValid, RequirementsFile, SupportedFileExtension, ConfigF
  * try {
  *   const apiTree = await parser.parse('./');
  *   console.log('Found routes:', apiTree.routes.length);
+ *   apiTree.routes.forEach(route => {
+ *     console.log(`Route ${route.route}: ${route.methods.length} methods`);
+ *     route.methods.forEach(method => {
+ *       console.log(`  - ${method.method.toUpperCase()}`);
+ *     });
+ *   });
  *   console.log('Found layers:', apiTree.layers.length);
  *   console.log('OpenAPI spec:', apiTree.openapi ? 'Yes' : 'No');
  * } catch (error) {
  *   if (error instanceof MissingConfigFileError) {
  *     console.error('Config missing:', error.location);
  *   }
- *   if (error instanceof LambifyError) {
+ *   if (error instanceof InvalidHttpMethodError) {
+ *     console.error('Invalid method:', error.toString());
+ *   }
+ *   if (error instanceof JetwayError) {
  *     console.error('Error details:', error.toString());
  *   }
  * }
@@ -50,7 +61,8 @@ export class ApiTreeParser extends Parser<string, ApiTree> {
    * @throws {DirectoryNotFoundError} Directory doesn't exist
    * @throws {NotADirectoryError} Path is not a directory  
    * @throws {EmptyApiFolderError} No handler files found in api directory
-   * @throws {MissingConfigFileError} Config file missing for a route
+   * @throws {MissingConfigFileError} Config file missing for a method
+   * @throws {InvalidHttpMethodError} Invalid HTTP method directory name
    * @throws {MissingLayerConfigFileError} Layer config file missing
    * @throws {InvalidFileExtensionError} Unsupported file extension
    */
@@ -58,7 +70,7 @@ export class ApiTreeParser extends Parser<string, ApiTree> {
     const apiDirectory = path.join(rootDirectory, 'api');
     const layersDirectory = path.join(rootDirectory, 'layers');
 
-    // Parse API routes
+    // Parse API routes with methods
     const routes = await this.parseApiRoutes(apiDirectory);
     
     // Parse layers (optional)
@@ -77,7 +89,7 @@ export class ApiTreeParser extends Parser<string, ApiTree> {
   /**
    * Parse OpenAPI specification if present in root directory
    */
-  private async parseOpenApiSpec(rootDirectory: string) {
+  private async parseOpenApiSpec(rootDirectory: string): Promise<OpenApiSpec | undefined> {
     const openApiFile = path.join(rootDirectory, 'openapi.yaml');
     
     try {
@@ -90,54 +102,108 @@ export class ApiTreeParser extends Parser<string, ApiTree> {
   }
 
   /**
-   * Parse API routes from the api directory
+   * Parse API routes from the api directory using the new structure
    */
   private async parseApiRoutes(apiDirectory: string): Promise<ApiRoute[]> {
-    const handlerFiles = await findFileRecursively(apiDirectory, 'handler');
+    const discoveredRoutes = await discoverApiRoutes(apiDirectory);
     const routes: ApiRoute[] = [];
 
-    for (const file of handlerFiles) {
-      if (!isFileExtensionValid(file)) {
-        const extension = path.extname(file).slice(1);
-        throw new InvalidFileExtensionError(file, extension);
-      }
+    for (const discoveredRoute of discoveredRoutes) {
+      const methods: ApiMethod[] = [];
 
-      const extension = path.extname(file).slice(1) as SupportedFileExtension;
-      const requirementsFile = RequirementsFile[extension];
-      const handlerDirectory = path.dirname(file);
-
-      const route = '/' + path.relative(apiDirectory, handlerDirectory).replace(/\\/g, '/');
-      const configFile = path.join(handlerDirectory, ConfigFiles.API_ROUTE);
-      const dependenciesFile = path.join(handlerDirectory, requirementsFile);
-
-      // Check if config file exists (required)
-      try {
-        await fs.access(configFile);
-      } catch (error) {
-        if (error instanceof Error && 'code' in error && (error as any).code === 'ENOENT') {
-          throw new MissingConfigFileError(configFile, route);
+      for (const methodDir of discoveredRoute.methodDirectories) {
+        // Validate HTTP method
+        if (!isValidHttpMethod(methodDir.method)) {
+          throw new InvalidHttpMethodError(methodDir.method, discoveredRoute.route);
         }
-        throw error;
+
+        // Find handler file in method directory
+        const handlerFiles = await this.findHandlerFiles(methodDir.directory);
+        if (handlerFiles.length === 0) {
+          continue; // Skip if no handler file found
+        }
+
+        const handlerFile = handlerFiles[0]; // Take the first handler file found
+
+        // Validate file extension
+        if (!isFileExtensionValid(handlerFile)) {
+          const extension = path.extname(handlerFile).slice(1);
+          throw new InvalidFileExtensionError(handlerFile, extension);
+        }
+
+        const extension = path.extname(handlerFile).slice(1) as SupportedFileExtension;
+        const requirementsFile = RequirementsFile[extension];
+
+        const configFile = path.join(methodDir.directory, ConfigFiles.API_ROUTE);
+        const dependenciesFile = path.join(methodDir.directory, requirementsFile);
+        const methodOpenApiFile = path.join(methodDir.directory, 'openapi.yaml');
+
+        // Check if config file exists (required)
+        try {
+          await fs.access(configFile);
+        } catch (error) {
+          if (error instanceof Error && 'code' in error && (error as any).code === 'ENOENT') {
+            throw new MissingConfigFileError(configFile, `${discoveredRoute.route} ${methodDir.method.toUpperCase()}`);
+          }
+          throw error;
+        }
+
+        // Check if dependencies file exists (optional)
+        let dependenciesFileExists: string | undefined;
+        try {
+          await fs.access(dependenciesFile);
+          dependenciesFileExists = dependenciesFile;
+        } catch {
+          dependenciesFileExists = undefined;
+        }
+
+        // Check if method-specific OpenAPI file exists (optional)
+        let methodOpenApi: OpenApiSpec | undefined;
+        try {
+          await fs.access(methodOpenApiFile);
+          methodOpenApi = await this.openApiParser.parse(methodOpenApiFile);
+        } catch {
+          methodOpenApi = undefined;
+        }
+
+        methods.push({
+          method: methodDir.method,
+          handlerFile,
+          configFile,
+          dependenciesFile: dependenciesFileExists,
+          openapi: methodOpenApi
+        });
       }
 
-      // Check if dependencies file exists and include it only if it does
-      let dependenciesFileExists;
-      try {
-        await fs.access(dependenciesFile);
-        dependenciesFileExists = dependenciesFile;
-      } catch {
-        dependenciesFileExists = undefined;
+      if (methods.length > 0) {
+        routes.push({
+          route: discoveredRoute.route,
+          methods
+        });
       }
-
-      routes.push({
-        route,
-        handlerFile: file,
-        configFile,
-        dependenciesFile: dependenciesFileExists
-      });
     }
 
     return routes;
+  }
+
+  /**
+   * Find handler files in a directory
+   */
+  private async findHandlerFiles(directory: string): Promise<string[]> {
+    try {
+      const entries = await fs.readdir(directory, { withFileTypes: true });
+      const handlerFiles: string[] = [];
+      
+      for (const entry of entries) {
+        if (entry.isFile() && path.parse(entry.name).name === 'handler') {
+          handlerFiles.push(path.join(directory, entry.name));
+        }
+      }
+      
+      return handlerFiles;
+    } catch {
+      return [];
+    }
   }
 
   /**
@@ -155,7 +221,7 @@ export class ApiTreeParser extends Parser<string, ApiTree> {
       // Config file existence is already verified by findLayerDirectories
       
       // Check if dependencies file exists and include it only if it does
-      let dependenciesFileExists;
+      let dependenciesFileExists: string | undefined;
       try {
         await fs.access(dependenciesFile);
         dependenciesFileExists = dependenciesFile;

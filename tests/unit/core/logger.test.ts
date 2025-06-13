@@ -3,43 +3,36 @@ import { Logger, LogLevel } from '../../../src/core/logger/logger';
 
 describe('Logger', () => {
   let consoleSpy: ReturnType<typeof vi.spyOn>;
-  const originalEnv = process.env.LAMBIFY_LOG_LEVEL;
-  const originalNoColor = process.env.NO_COLOR;
-  const originalLambifyNoColor = process.env.LAMBIFY_NO_COLOR;
-  const originalLambifyDisableColor = process.env.LAMBIFY_DISABLE_COLOR;
+  const originalEnv = process.env.JETWAY_LOG_LEVEL;
+  const originalJetwayNoColor = process.env.JETWAY_NO_COLOR;
+  const originalJetwayDisableColor = process.env.JETWAY_DISABLE_COLOR;
 
   beforeEach(() => {
     consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     // Clear any previous level settings
     Logger.resetLevel(); // Reset global level
     Logger.resetColor(); // Reset global color
-    delete process.env.LAMBIFY_LOG_LEVEL;
-    delete process.env.NO_COLOR;
-    delete process.env.LAMBIFY_NO_COLOR;
-    delete process.env.LAMBIFY_DISABLE_COLOR;
+    delete process.env.JETWAY_LOG_LEVEL;
+    delete process.env.JETWAY_NO_COLOR;
+    delete process.env.JETWAY_DISABLE_COLOR;
   });
 
   afterEach(() => {
     consoleSpy.mockRestore();
     if (originalEnv !== undefined) {
-      process.env.LAMBIFY_LOG_LEVEL = originalEnv;
+      process.env.JETWAY_LOG_LEVEL = originalEnv;
     } else {
-      delete process.env.LAMBIFY_LOG_LEVEL;
+      delete process.env.JETWAY_LOG_LEVEL;
     }
-    if (originalNoColor !== undefined) {
-      process.env.NO_COLOR = originalNoColor;
+    if (originalJetwayNoColor !== undefined) {
+      process.env.JETWAY_NO_COLOR = originalJetwayNoColor;
     } else {
-      delete process.env.NO_COLOR;
+      delete process.env.JETWAY_NO_COLOR;
     }
-    if (originalLambifyNoColor !== undefined) {
-      process.env.LAMBIFY_NO_COLOR = originalLambifyNoColor;
+    if (originalJetwayDisableColor !== undefined) {
+      process.env.JETWAY_DISABLE_COLOR = originalJetwayDisableColor;
     } else {
-      delete process.env.LAMBIFY_NO_COLOR;
-    }
-    if (originalLambifyDisableColor !== undefined) {
-      process.env.LAMBIFY_DISABLE_COLOR = originalLambifyDisableColor;
-    } else {
-      delete process.env.LAMBIFY_DISABLE_COLOR;
+      delete process.env.JETWAY_DISABLE_COLOR;
     }
   });
 
@@ -57,7 +50,7 @@ describe('Logger', () => {
 
   describe('Log Level Priority', () => {
     it('should respect environment variable by default', () => {
-      process.env.LAMBIFY_LOG_LEVEL = 'info';
+      process.env.JETWAY_LOG_LEVEL = 'info';
       const logger = new Logger('Test');
       
       logger.info('should log');
@@ -70,7 +63,7 @@ describe('Logger', () => {
     });
 
     it('should allow global level to override environment variable', () => {
-      process.env.LAMBIFY_LOG_LEVEL = 'error';
+      process.env.JETWAY_LOG_LEVEL = 'error';
       Logger.setLevel(LogLevel.Info);
       
       const logger = new Logger('Test');
@@ -124,7 +117,7 @@ describe('Logger', () => {
     });
 
     it('should respect environment variable by default', () => {
-      process.env.NO_COLOR = '1';
+      process.env.JETWAY_NO_COLOR = '1';
       const logger = new Logger('Test');
       
       logger.error('error message');
@@ -137,8 +130,8 @@ describe('Logger', () => {
       );
     });
 
-    it('should respect LAMBIFY_NO_COLOR environment variable', () => {
-      process.env.LAMBIFY_NO_COLOR = 'true';
+    it('should respect JETWAY_NO_COLOR environment variable', () => {
+      process.env.JETWAY_NO_COLOR = 'true';
       const logger = new Logger('Test');
       
       logger.warning('warning message');
@@ -148,8 +141,8 @@ describe('Logger', () => {
       );
     });
 
-    it('should respect LAMBIFY_DISABLE_COLOR environment variable', () => {
-      process.env.LAMBIFY_DISABLE_COLOR = '1';
+    it('should respect JETWAY_DISABLE_COLOR environment variable', () => {
+      process.env.JETWAY_DISABLE_COLOR = '1';
       const logger = new Logger('Test');
       
       logger.info('info message');
@@ -160,7 +153,7 @@ describe('Logger', () => {
     });
 
     it('should allow global color control to override environment variable', () => {
-      process.env.NO_COLOR = '1';
+      process.env.JETWAY_NO_COLOR = '1';
       Logger.enableColor(); // Override env var
       
       const logger = new Logger('Test');

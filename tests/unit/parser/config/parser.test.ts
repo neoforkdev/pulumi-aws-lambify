@@ -42,7 +42,7 @@ describe('ConfigParser', () => {
         layers: ['shared-lib', 'jwt-utils'],
         permissions: ['dynamodb:GetItem', 's3:PutObject'],
         tags: {
-          project: 'lambify',
+          project: 'jetway',
           environment: 'dev'
         },
         name: 'get-user',

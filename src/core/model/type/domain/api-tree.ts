@@ -1,17 +1,31 @@
 /**
- * Represents the file structure for an API endpoint within an API tree.
+ * Represents an HTTP method configuration for an API endpoint.
  *
- * For example, for an endpoint "v1/hello":
- * - route: "v1/hello"
- * - handlerFile: "v1/hello/handler.py"
- * - configFile: "v1/hello/config.yaml"
- * - dependenciesFile: "v1/hello/requirements.txt"
+ * For example, for a GET method at "/user":
+ * - method: "get"
+ * - handlerFile: "api/user/get/handler.py"
+ * - configFile: "api/user/get/config.yaml"
+ * - dependenciesFile: "api/user/get/requirements.txt"
+ * - openapi: optional OpenAPI spec for this method
  */
-export type ApiRoute = {
-  readonly route: string;
+export type ApiMethod = {
+  readonly method: string;
   readonly handlerFile: string;
   readonly configFile: string;
   readonly dependenciesFile?: string;
+  readonly openapi?: OpenApiSpec;
+};
+
+/**
+ * Represents an API route containing one or more HTTP methods.
+ *
+ * For example, for a route "/user":
+ * - route: "/user"
+ * - methods: [{ method: "get", ... }, { method: "post", ... }]
+ */
+export type ApiRoute = {
+  readonly route: string;
+  readonly methods: readonly ApiMethod[];
 };
 
 /**

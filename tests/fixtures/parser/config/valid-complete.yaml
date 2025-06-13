@@ -39,7 +39,7 @@ permissions:
 
 # Key-value tags added to the Lambda function
 tags:
-  project: lambify
+  project: jetway
   environment: dev
 
 # Optional override of function name

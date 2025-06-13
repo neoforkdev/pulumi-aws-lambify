@@ -3,7 +3,7 @@ description:
 globs: 
 alwaysApply: false
 ---
-# Pulumi AWS Lambify - Project Architecture
+# Jetway by Neofork - Project Architecture
 
 ## Overview
 This is a TypeScript project for parsing and managing AWS Lambda API structures. The codebase follows strict patterns for parsing, logging, and testing.

@@ -11,6 +11,19 @@ export const RequirementsFile: Record<SupportedFileExtension, string> = {
 }
 
 /**
+ * Supported HTTP methods for API routes
+ */
+export enum HttpMethod {
+  GET = 'get',
+  POST = 'post',
+  PUT = 'put',
+  DELETE = 'delete',
+  PATCH = 'patch',
+  HEAD = 'head',
+  OPTIONS = 'options'
+}
+
+/**
  * Configuration file names for different resource types
  */
 export const ConfigFiles = {
@@ -24,6 +37,13 @@ export function isFileExtensionValid(file: string): boolean {
     return false;
   }
   return true;
+}
+
+/**
+ * Checks if a directory name is a valid HTTP method
+ */
+export function isValidHttpMethod(method: string): boolean {
+  return isEnumValue(HttpMethod, method.toLowerCase());
 }
 
 /**

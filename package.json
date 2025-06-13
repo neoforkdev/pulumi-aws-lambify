@@ -1,5 +1,5 @@
 {
-  "name": "@neofork/lambify",
+  "name": "@neofork/jetway",
   "version": "1.0.0",
   "type": "module",
   "main": "dist/index.js",
@@ -31,15 +31,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/neoforkdev/pulumi-aws-lambify.git"
+    "url": "git+https://github.com/NeoforkDev/jetway.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/neoforkdev/pulumi-aws-lambify/issues"
+    "url": "https://github.com/NeoforkDev/jetway/issues"
   },
-  "homepage": "https://github.com/neoforkdev/pulumi-aws-lambify#readme",
+  "homepage": "https://github.com/NeoforkDev/jetway#readme",
   "description": "",
   "dependencies": {
     "@apidevtools/swagger-parser": "^11.0.1",

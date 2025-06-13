@@ -33,7 +33,7 @@ const ConsoleColor: Record<Severity, string> = {
  * Parse log level from environment variable or return default
  */
 function getLogLevelFromEnv(): Severity {
-  const envLevel = process.env.LAMBIFY_LOG_LEVEL?.toLowerCase();
+  const envLevel = process.env.JETWAY_LOG_LEVEL?.toLowerCase();
   
   switch (envLevel) {
     case 'error':
@@ -57,8 +57,8 @@ function getColorDisabledFromEnv(): boolean {
   // Check common environment variables for disabling colors
   return !!(
     process.env.NO_COLOR ||
-    process.env.LAMBIFY_NO_COLOR ||
-    process.env.LAMBIFY_DISABLE_COLOR
+    process.env.JETWAY_NO_COLOR ||
+    process.env.JETWAY_DISABLE_COLOR
   );
 }
 
