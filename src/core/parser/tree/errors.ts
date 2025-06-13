@@ -1,20 +1,38 @@
 // Core error classes for Jetway
-import { LambifyError, FileError, ErrorFormatter } from '../../model/type/core/errors';
+import { LambifyError, FileError } from '../../model/type/core/errors';
+
+/**
+ * Creates error configuration for simpler error construction
+ */
+interface ErrorConfig {
+  readonly errorType: string;
+  readonly description: string;
+  readonly suggestion: string;
+}
+
+/**
+ * Factory function for creating standardized error configurations
+ */
+function createErrorConfig(errorType: string, description: string, suggestion: string): ErrorConfig {
+  return { errorType, description, suggestion };
+}
 
 // Tree parser specific errors
 export class DirectoryNotFoundError extends LambifyError {
   constructor(directory: string, cause?: Error) {
-    const suggestion = 'Create the directory';
-    const errorType = 'Directory not found';
-    const description = 'Directory does not exist or cannot be accessed';
+    const config = createErrorConfig(
+      'Directory not found',
+      'Directory does not exist or cannot be accessed',
+      'Create the directory'
+    );
     
     super(
       `Directory not found: ${directory}`, 
       { directory }, 
       cause, 
-      suggestion,
-      errorType,
-      description,
+      config.suggestion,
+      config.errorType,
+      config.description,
       directory
     );
   }
@@ -22,50 +40,51 @@ export class DirectoryNotFoundError extends LambifyError {
 
 export class NotADirectoryError extends LambifyError {
   constructor(path: string) {
-    const suggestion = 'Check if this is a file instead of a directory';
-    const errorType = 'Not a directory';
-    const description = 'Expected a directory but found a file or other entity';
+    const config = createErrorConfig(
+      'Not a directory',
+      'Expected a directory but found a file or other entity',
+      'Check if this is a file instead of a directory'
+    );
     
     super(
       `Path is not a directory: ${path}`, 
       { path }, 
       undefined, 
-      suggestion,
-      errorType,
-      description,
+      config.suggestion,
+      config.errorType,
+      config.description,
       path
     );
   }
 }
 
 export class EmptyApiFolderError extends LambifyError {
-  private readonly filename: string;
-
   constructor(directory: string, filename: string) {
-    const suggestion = `Create at least one ${filename} file in the directory`;
-    const errorType = 'No handler files found';
-    const description = `Expected to find ${filename} files but directory is empty`;
+    const config = createErrorConfig(
+      'No handler files found',
+      `Expected to find ${filename} files but directory is empty`,
+      `Create at least one ${filename} file in the directory`
+    );
     
     super(
       `No ${filename} files found in directory: ${directory}`, 
       { directory, filename }, 
       undefined, 
-      suggestion,
-      errorType,
-      description,
+      config.suggestion,
+      config.errorType,
+      config.description,
       directory
     );
-    this.filename = filename;
   }
 }
 
 export class MissingConfigFileError extends FileError {
-  private readonly route: string;
-
   constructor(configFile: string, route: string) {
-    const suggestion = 'Create the config file';
-    const errorType = 'Missing config file';
-    const description = `Route: ${route}\nRequired config.yaml file not found for this API route`;
+    const config = createErrorConfig(
+      'Missing config file',
+      `Route: ${route}\nRequired config.yaml file not found for this API route`,
+      'Create the config file'
+    );
     
     super(
       `Missing config file: ${configFile}`, 
@@ -73,21 +92,20 @@ export class MissingConfigFileError extends FileError {
       undefined, 
       { route }, 
       undefined, 
-      suggestion,
-      errorType,
-      description
+      config.suggestion,
+      config.errorType,
+      config.description
     );
-    this.route = route;
   }
 }
 
 export class InvalidFileExtensionError extends FileError {
-  private readonly extension: string;
-
   constructor(filePath: string, extension: string) {
-    const suggestion = 'Rename the file with a supported extension: .py, .js, .ts';
-    const errorType = 'Unsupported file extension';
-    const description = `Extension: .${extension}\nSupported extensions: .py, .js, .ts`;
+    const config = createErrorConfig(
+      'Unsupported file extension',
+      `Extension: .${extension}\nSupported extensions: .py, .js, .ts`,
+      'Rename the file with a supported extension: .py, .js, .ts'
+    );
     
     super(
       `Invalid file extension: ${extension}`, 
@@ -95,44 +113,40 @@ export class InvalidFileExtensionError extends FileError {
       undefined, 
       { extension }, 
       undefined, 
-      suggestion,
-      errorType,
-      description
+      config.suggestion,
+      config.errorType,
+      config.description
     );
-    this.extension = extension;
   }
 }
 
 export class InvalidHttpMethodError extends LambifyError {
-  private readonly method: string;
-  private readonly route: string;
-
   constructor(method: string, route: string) {
-    const suggestion = 'Use valid HTTP methods: get, post, put, delete, patch, head, options';
-    const errorType = 'Invalid HTTP method';
-    const description = `Route: ${route}\nSupported HTTP methods: get, post, put, delete, patch, head, options`;
+    const config = createErrorConfig(
+      'Invalid HTTP method',
+      `Route: ${route}\nSupported HTTP methods: get, post, put, delete, patch, head, options`,
+      'Use valid HTTP methods: get, post, put, delete, patch, head, options'
+    );
     
     super(
       `Invalid HTTP method: ${method}`, 
       { method, route }, 
       undefined, 
-      suggestion,
-      errorType,
-      description,
+      config.suggestion,
+      config.errorType,
+      config.description,
       method
     );
-    this.method = method;
-    this.route = route;
   }
 }
 
 export class MissingLayerConfigFileError extends FileError {
-  private readonly layerName: string;
-
   constructor(configFile: string, layerName: string) {
-    const suggestion = 'Create the layer config file';
-    const errorType = 'Missing layer config file';
-    const description = `Layer: ${layerName}\nRequired layer.yaml file not found for this layer`;
+    const config = createErrorConfig(
+      'Missing layer config file',
+      `Layer: ${layerName}\nRequired layer.yaml file not found for this layer`,
+      'Create the layer config file'
+    );
     
     super(
       `Missing layer config file: ${configFile}`, 
@@ -140,10 +154,9 @@ export class MissingLayerConfigFileError extends FileError {
       undefined, 
       { layerName }, 
       undefined, 
-      suggestion,
-      errorType,
-      description
+      config.suggestion,
+      config.errorType,
+      config.description
     );
-    this.layerName = layerName;
   }
 }

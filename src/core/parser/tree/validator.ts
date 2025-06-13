@@ -1,13 +1,12 @@
-import path from "path";
+import * as path from 'path';
 
-import { isEnumValue } from "../../utils/enums";
-
+/**
+ * Supported file extensions for handlers
+ */
 export enum SupportedFileExtension {
-  PYTHON = 'py'
-}
-
-export const RequirementsFile: Record<SupportedFileExtension, string> = {
-  [SupportedFileExtension.PYTHON]: 'requirements.txt'
+  PYTHON = 'py',
+  JAVASCRIPT = 'js',
+  TYPESCRIPT = 'ts'
 }
 
 /**
@@ -24,23 +23,49 @@ export enum HttpMethod {
 }
 
 /**
- * Configuration file names for different resource types
+ * Configuration file names
  */
 export const ConfigFiles = {
   API_ROUTE: 'config.yaml',
   LAYER: 'layer.yaml'
 } as const;
 
-export function isFileExtensionValid(file: string): boolean {
-  const extension = path.extname(file).slice(1);
-  if (!isEnumValue(SupportedFileExtension, extension)) {
-    return false;
-  }
-  return true;
+/**
+ * Requirements file names by file extension
+ */
+export const RequirementsFile = {
+  [SupportedFileExtension.PYTHON]: 'requirements.txt',
+  [SupportedFileExtension.JAVASCRIPT]: 'package.json',
+  [SupportedFileExtension.TYPESCRIPT]: 'package.json'
+} as const;
+
+/**
+ * Valid HTTP methods list for quick reference
+ */
+export const VALID_HTTP_METHODS = Object.values(HttpMethod);
+
+/**
+ * Valid file extensions list for quick reference
+ */
+export const VALID_FILE_EXTENSIONS = Object.values(SupportedFileExtension);
+
+/**
+ * Type guard to check if a value is a valid enum value
+ */
+function isEnumValue<T extends Record<string, string>>(enumObj: T, value: string): value is T[keyof T] {
+  return Object.values(enumObj).includes(value as T[keyof T]);
 }
 
 /**
- * Checks if a directory name is a valid HTTP method
+ * Validates if a file extension is supported
+ */
+export function isFileExtensionValid(file: string): boolean {
+  const extension = path.extname(file).slice(1);
+  return isEnumValue(SupportedFileExtension, extension);
+}
+
+/**
+ * Validates if a directory name is a valid HTTP method
  */
 export function isValidHttpMethod(method: string): boolean {
   return isEnumValue(HttpMethod, method.toLowerCase());
