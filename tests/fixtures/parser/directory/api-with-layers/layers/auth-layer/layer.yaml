@@ -1,5 +1,5 @@
 description: Authentication utilities layer
-compatible_runtimes:
+runtimes:
   - python3.9
   - python3.10
 license_info: MIT 

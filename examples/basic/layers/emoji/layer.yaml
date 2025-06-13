@@ -1,0 +1,11 @@
+name: emoji
+description: "Maps moods to corresponding emojis"
+runtimes:
+  - python3.11
+  - python3.9
+compatible_architectures:
+  - x86_64
+include:
+  - emoji_layer.py
+exclude:
+  - tests/ 

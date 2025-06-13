@@ -72,7 +72,7 @@ export class ConfigParser extends Parser<string, Config> {
           path: issue.path.map(String),
           message: issue.message
         }));
-        throw new ConfigValidationError(filePath, issues, source);
+        throw new ConfigValidationError(filePath, issues);
       }
       throw error;
     }

@@ -2,8 +2,9 @@ import * as pulumi from '@pulumi/pulumi';
 import * as aws from '@pulumi/aws';
 import * as path from 'path';
 
-import { ApiTreeParser } from '../../core/parser/tree/parser';
-import type { ApiTree, ApiRoute, ApiMethod } from '../../core/model/type/domain/api-tree';
+import { BackendParser } from '../../core/parser/backend/parser';
+import type { BackendModel } from '../../core/model/type/domain/backend';
+import type { ApiRoute, ApiMethod } from '../../core/model/type/domain/api-tree';
 
 // Assuming this variable is available as mentioned in the requirements
 declare const someLambdaRoleArn: pulumi.Input<string>;
@@ -27,7 +28,7 @@ export class JetwayApi extends pulumi.ComponentResource {
    */
   private constructor(
     name: string,
-    apiTree: ApiTree,
+    backend: BackendModel,
     tags: string[] = [],
     opts?: pulumi.ComponentResourceOptions
   ) {
@@ -36,7 +37,7 @@ export class JetwayApi extends pulumi.ComponentResource {
     this.awsTags = this.convertTagsToAwsFormat(tags);
     this.restApi = this.createRestApi(name);
     
-    const { methods, permissions } = this.createApiResources(name, apiTree.routes);
+    const { methods, permissions } = this.createApiResources(name, backend.api.routes);
     
     this.deployment = this.createDeployment(name, methods, permissions);
     this.url = this.createInvokeUrl();
@@ -48,16 +49,16 @@ export class JetwayApi extends pulumi.ComponentResource {
   }
 
   /**
-   * Creates a JetwayApi instance from a directory containing API routes
+   * Creates a JetwayApi instance from a directory containing API routes and layers
    */
   static async fromDirectory(
     name: string,
     path: string,
     tags: string[] = []
   ): Promise<JetwayApi> {
-    const parser = new ApiTreeParser();
-    const apiTree = await parser.parse(path);
-    return new JetwayApi(name, apiTree, tags);
+    const parser = new BackendParser();
+    const backend = await parser.parse(path);
+    return new JetwayApi(name, backend, tags);
   }
 
   private convertTagsToAwsFormat(tags: string[]): Record<string, string> {

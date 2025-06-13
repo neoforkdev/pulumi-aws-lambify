@@ -1,24 +1,28 @@
-// Main entry point for Jetway by Neofork library
+// Modern Jetway by Neofork library - Latest features only
 
 // Core exports
 export * from './core';
 
-// Re-export commonly used types and classes for convenience
-export type { ApiTree, ApiRoute, ApiMethod, ApiLayer, OpenApiSpec } from './core/model/type/domain/api-tree';
+// Primary parsers and types
+export type { LayerConfig, ParsedLayer, ParsedLayers } from './core/model/type/domain/layer';
+export type { ParsedApi, BackendModel } from './core/model/type/domain/backend';
+export type { ApiRoute, ApiMethod, OpenApiSpec } from './core/model/type/domain/api-tree';
 export type { Config } from './core/model/type/domain/config';
+
+// Modern parsers
 export { ConfigParser } from './core/parser/config/parser';
-export { ApiTreeParser } from './core/parser/tree/parser';
+export { ApiParser } from './core/parser/api/parser';
+export { LayerParser } from './core/parser/layer/parser';
+export { BackendParser } from './core/parser/backend/parser';
 export { OpenApiParser } from './core/parser/openapi/parser';
 
-// Logger for external use
+// Utilities
 export { Logger } from './core/logger/logger';
 
-// Error exports for proper error handling
-export {
-  LambifyError,
-  FileError
-} from './core/model/type/core/errors';
+// Core errors
+export { LambifyError, FileError } from './core/model/type/core/errors';
 
+// Parser errors
 export {
   DirectoryNotFoundError,
   NotADirectoryError,
@@ -28,6 +32,11 @@ export {
   InvalidHttpMethodError,
   MissingLayerConfigFileError
 } from './core/parser/tree/errors';
+
+export {
+  LayerConfigParseError,
+  LayerConfigValidationError
+} from './core/parser/layer/errors';
 
 export {
   ConfigFileNotFoundError,

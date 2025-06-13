@@ -1,80 +1,82 @@
 import * as path from 'path';
-import { fileURLToPath } from 'url';
-import { Logger } from './src/core/logger/logger';
-import { ApiTreeParser, OpenApiParser } from './src';
+import fs from 'fs';
+import { BackendParser, ApiParser, LayerParser, OpenApiParser } from './src';
 
-// ES module compatibility
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+async function demonstrateParsingExample() {
+  console.log('🚀 Jetway Parser Demo\n');
 
-const logger = new Logger('Playground');
-
-async function main(): Promise<void> {
-  console.log('🚀 Jetway by Neofork Showcase - New Structure Support');
+  // Example directory path
+  const examplePath = path.join(__dirname, 'examples', 'basic');
   
-  // Demo ApiTreeParser with new structure
-  const treeParser = new ApiTreeParser();
-  const treeFixturesDir = path.resolve(__dirname, 'tests/fixtures/parser/directory');
-  
+  if (!fs.existsSync(examplePath)) {
+    console.error('Example directory not found:', examplePath);
+    return;
+  }
+
+  // Demo BackendParser with new structure
+  const backendParser = new BackendParser();
   try {
-    const validPath = path.join(treeFixturesDir, 'api-basic-new');
-    const apiTree = await treeParser.parse(validPath);
+    console.log('📡 Parsing backend structure...');
+    const backend = await backendParser.parse(examplePath);
     
-    console.log(`✅ API tree: ${apiTree.routes.length} routes, ${apiTree.layers.length} layers`);
+    console.log(`\n✅ Found ${backend.api.routes.length} API routes and ${backend.layers.layers.length} layers\n`);
     
-    // Show route details with methods
-    apiTree.routes.forEach(route => {
+    // Display API routes
+    backend.api.routes.forEach(route => {
       console.log(`📍 Route: ${route.route}`);
       route.methods.forEach(method => {
-        console.log(`  🔗 ${method.method.toUpperCase()}: ${path.basename(method.handlerFile)}`);
-        console.log(`    📝 Config: ${path.basename(method.configFile)}`);
-        if (method.openapi) {
-          console.log(`    📋 OpenAPI: ${method.openapi.spec.info.title}`);
-        }
-        if (method.dependenciesFile) {
-          console.log(`    📦 Dependencies: ${path.basename(method.dependenciesFile)}`);
-        }
+        console.log(`  - ${method.method.toUpperCase()}: ${method.handlerFile}`);
       });
     });
     
-    console.log(`📋 Global OpenAPI: ${apiTree.openapi ? apiTree.openapi.spec.info.title : 'None'}`);
-  } catch (error) {
-    console.error('Failed to parse API tree', error);
-  }
-  
-  // Demo with existing fixture that has dependencies
-  try {
-    const withDepsPath = path.join(treeFixturesDir, 'api-with-deps');
-    const apiTreeWithDeps = await treeParser.parse(withDepsPath);
-    
-    console.log('\n🔧 API with dependencies:');
-    apiTreeWithDeps.routes.forEach(route => {
-      route.methods.forEach(method => {
-        if (method.dependenciesFile) {
-          console.log(`  ✅ ${route.route} ${method.method.toUpperCase()} has dependencies`);
-        }
-      });
+    // Display layers
+    backend.layers.layers.forEach(layer => {
+      console.log(`\n🧱 Layer: ${layer.name}`);
+      console.log(`  Description: ${layer.config.description || 'No description'}`);
+      console.log(`  Runtimes: ${layer.config.runtimes.join(', ')}`);
+      console.log(`  Dependencies: ${layer.dependenciesFile ? 'Yes' : 'No'}`);
     });
+    
   } catch (error) {
-    console.error('Failed to parse API tree with deps', error);
+    console.error('❌ Backend parsing failed:', error);
   }
-  
-  // Demo standalone OpenAPI parser
-  const openApiParser = new OpenApiParser();
-  const openApiFixturesDir = path.resolve(__dirname, 'tests/fixtures/parser/openapi');
+
+  // Demo individual parsers with specific paths
+  console.log('\n🔧 Individual Parser Examples:');
   
   try {
-    const validSpec = path.join(openApiFixturesDir, 'valid-openapi.yaml');
-    const result = await openApiParser.parse(validSpec);
-    console.log(`\n✅ Standalone OpenAPI: ${result.spec.info.title} v${result.spec.info.version}`);
+    // ApiParser with specific directory
+    const apiParser = new ApiParser();
+    const apiPath = path.join(examplePath, 'api');
+    if (fs.existsSync(apiPath)) {
+      const api = await apiParser.parse(apiPath);
+      console.log(`✅ API Parser: Found ${api.routes.length} routes`);
+    }
+
+    // LayerParser with specific directory
+    const layerParser = new LayerParser();
+    const layersPath = path.join(examplePath, 'layers');
+    if (fs.existsSync(layersPath)) {
+      const layers = await layerParser.parse(layersPath);
+      console.log(`✅ Layer Parser: Found ${layers.layers.length} layers`);
+    }
   } catch (error) {
-    console.error('Failed to parse OpenAPI', error);
+    console.error('❌ Individual parser demo failed:', error);
   }
-  
-  console.log('\n✅ Showcase completed - New structure fully supported!');
-  console.log('\n📋 New structure: api/[route]/[method]/handler.py');
-  console.log('   Each route can contain multiple HTTP methods');
-  console.log('   Each method has its own config, handler, and optional OpenAPI spec');
+
+  // Demo OpenApiParser
+  const openApiFile = path.join(examplePath, 'openapi.yaml');
+  if (fs.existsSync(openApiFile)) {
+    const openApiParser = new OpenApiParser();
+    try {
+      console.log('\n📋 Parsing OpenAPI specification...');
+      const openApiSpec = await openApiParser.parse(openApiFile);
+      console.log('✅ OpenAPI spec parsed successfully:', openApiSpec.filePath);
+    } catch (error) {
+      console.error('❌ OpenAPI parsing failed:', error);
+    }
+  }
 }
 
-main().catch(console.error); 
+// Run the demo
+demonstrateParsingExample(); 

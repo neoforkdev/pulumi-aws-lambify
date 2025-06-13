@@ -1,4 +1,4 @@
 description: Common utilities for v1 API
-compatible_runtimes:
+runtimes:
   - python3.9
   - python3.10 
