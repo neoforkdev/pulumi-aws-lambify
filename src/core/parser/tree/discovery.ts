@@ -78,7 +78,9 @@ async function scanForRoutes(
 
   // If this directory contains methods, it's a route
   if (methodDirs.length > 0) {
-    const route = relativePath ? `/${relativePath}` : '/';
+    const route = relativePath 
+      ? `/${relativePath.replace(/\[([^\]]+)\]/g, '{$1}')}` 
+      : '/';
     routes.push({
       route,
       routeDirectory: directory,

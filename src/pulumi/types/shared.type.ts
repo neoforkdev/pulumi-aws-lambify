@@ -20,9 +20,4 @@ export interface CorsConfig {
   allowOrigins?: string[];
   allowMethods?: string[];
   allowHeaders?: string[];
-}
-
-export interface VpcConfig {
-  subnetIds: string[];
-  securityGroupIds: string[];
 } 

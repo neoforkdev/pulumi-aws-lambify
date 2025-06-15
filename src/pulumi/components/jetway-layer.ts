@@ -5,10 +5,11 @@
  */
 
 import * as pulumi from '@pulumi/pulumi';
+
 import { JetwayLayerResource } from './jetway-layer-resource';
-import type { ParsedLayers } from '../../core/model/type/domain/layer';
-import type { JetwayLayerArgs } from '../types/layer.type';
+
 import { JetwayLayerArgsSchema } from '../types/layer.schema';
+import type { JetwayLayerArgs } from '../types/layer.type';
 
 /**
  * Deploys multiple Lambda layers and provides their ARNs for function attachment.
@@ -31,27 +32,25 @@ export class JetwayLayer extends pulumi.ComponentResource {
       layers,
       tags,
       projectName,
-      environment,
+      environmentName,
     } = validatedArgs;
 
     const resourceTags = {
       ...tags,
-      Environment: environment,
+      Environment: environmentName,
       Project: projectName,
-      Component: 'Lambda Layers',
+      Component: 'LayerStack',
       ManagedBy: 'Pulumi',
+      Engine: 'Jetway',
     };
 
-    // Create each layer
-    this.layers = layers.layers.map((layer, index) => {
-      return new JetwayLayerResource(`${name}-${layer.name}`, {
+    // Create layer resources
+    this.layers = layers.map((layer, index) => {
+      return new JetwayLayerResource(`${name}-layer-${index}`, {
         layer,
-        tags: {
-          ...resourceTags,
-          LayerName: layer.name,
-        },
         projectName,
-        environmentName: environment,
+        environmentName,
+        tags: resourceTags,
       }, { parent: this });
     });
 

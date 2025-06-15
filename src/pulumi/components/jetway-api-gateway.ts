@@ -47,37 +47,37 @@ export class JetwayApiGateway extends pulumi.ComponentResource {
       Component: 'HttpApiGateway',
     };
 
-    // Create HTTP API with CORS configuration
+    // AWS RESOURCE CREATION
     const httpApi = new aws.apigatewayv2.Api(`${name}-http-api`, {
       name: apiName,
       description: finalDescription,
       protocolType: 'HTTP',
-      tags: resourceTags,
       corsConfiguration: cors ? {
         allowCredentials: true,
-        allowHeaders: cors.allowHeaders || ['*'],
-        allowMethods: cors.allowMethods || ['*'],
-        allowOrigins: cors.allowOrigins || ['*'],
+        allowHeaders: ['content-type', 'x-amz-date', 'authorization', 'x-api-key', 'x-amz-security-token'],
+        allowMethods: ['*'],
+        allowOrigins: ['*'],
         exposeHeaders: ['date', 'keep-alive'],
         maxAge: 86400, // 24 hours
       } : undefined,
+      tags: resourceTags,
     }, { parent: this });
 
-    // Create deployment stage
+    // AWS RESOURCE CREATION
     const stage = new aws.apigatewayv2.Stage(`${name}-stage`, {
       apiId: httpApi.id,
-      name: environment,
+      name: '$default',
       autoDeploy: true,
       tags: resourceTags,
     }, { parent: this });
 
-    // Setup custom domain if provided
     let customDomain: aws.apigatewayv2.DomainName | undefined;
-    let apiMapping: aws.apigatewayv2.ApiMapping | undefined;
-    
+
     if (domain) {
       customDomain = this.setupCustomDomain(name, domain, resourceTags);
-      apiMapping = new aws.apigatewayv2.ApiMapping(`${name}-api-mapping`, {
+
+      // AWS RESOURCE CREATION
+      new aws.apigatewayv2.ApiMapping(`${name}-api-mapping`, {
         apiId: httpApi.id,
         domainName: customDomain.domainName,
         stage: stage.name,
@@ -110,16 +110,19 @@ export class JetwayApiGateway extends pulumi.ComponentResource {
   ): aws.apigatewayv2.DomainName {
     
     let certificateArn: pulumi.Input<string> = domain.certificateArn || '';
+
     if (!domain.certificateArn) {
+      // AWS RESOURCE CREATION
       const certificate = new aws.acm.Certificate(`${name}-cert`, {
         domainName: domain.domainName,
         validationMethod: 'DNS',
         tags,
       }, { parent: this });
-      
+
       certificateArn = certificate.arn;
     }
 
+    // AWS RESOURCE CREATION
     const customDomain = new aws.apigatewayv2.DomainName(`${name}-domain`, {
       domainName: domain.domainName,
       domainNameConfiguration: {
@@ -131,6 +134,7 @@ export class JetwayApiGateway extends pulumi.ComponentResource {
     }, { parent: this });
 
     if (domain.hostedZoneId) {
+      // AWS RESOURCE CREATION
       new aws.route53.Record(`${name}-domain-record`, {
         zoneId: domain.hostedZoneId,
         name: domain.domainName,
@@ -140,7 +144,7 @@ export class JetwayApiGateway extends pulumi.ComponentResource {
           zoneId: customDomain.domainNameConfiguration.hostedZoneId,
           evaluateTargetHealth: false,
         }],
-      }, { parent: this });
+      }, { parent: this, dependsOn: [customDomain] });
     }
 
     return customDomain;

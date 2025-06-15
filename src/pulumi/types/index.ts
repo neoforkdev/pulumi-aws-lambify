@@ -1,51 +1,43 @@
 /**
- * Pulumi Components Types and Schemas
+ * Pulumi Types Index
  * 
- * Re-exports all component types, schemas, and core domain types.
+ * Re-exports all types for convenient importing
  */
 
-// Re-export core domain types
-export type { 
-  BackendModel, 
-  ParsedApi 
-} from '../../core/model/type/domain/backend';
-
-export type { 
-  ParsedLayers, 
-  ParsedLayer, 
-  LayerConfig 
-} from '../../core/model/type/domain/layer';
-
-export type { 
-  ApiRoute, 
-  ApiMethod, 
-  ApiLayer, 
-  OpenApiSpec, 
-  ApiTree 
-} from '../../core/model/type/domain/api-tree';
-
-// Export shared types and schemas
+// Type definitions
+export * from './api-gateway.type';
+export * from './backend.type';
+export * from './function.type';
+export * from './layer.type';
+export * from './route.type';
 export * from './shared.type';
 export * from './shared.schema';
 
-// Export function types and schemas
-export * from './function.type';
+// Validation schemas  
+export * from './api-gateway.schema';
+export * from './backend.schema';
 export * from './function.schema';
-
-// Export layer types and schemas  
-export * from './layer.type';
 export * from './layer.schema';
-
-// Export route types and schemas
-export * from './route.type';
 export * from './route.schema';
 
-// Export API Gateway types and schemas
-export * from './api-gateway.type';
-export * from './api-gateway.schema';
+// Core domain types (re-exported for convenience)
+export { 
+  type Config,
+  type VpcConfig,
+} from '../../core/model/type/domain/config';
 
-// Export backend types and schemas
-export * from './backend.type';
-export * from './backend.schema';
+export {
+  type LayerConfig,
+  type ParsedLayer,
+} from '../../core/model/type/domain/layer';
 
- 
+export {
+  type ApiMethod,
+  type ApiRoute,
+  type ApiTree,
+  type OpenApiSpec,
+} from '../../core/model/type/domain/api-tree';
+
+export {
+  type BackendModel,
+} from '../../core/model/type/domain/backend';

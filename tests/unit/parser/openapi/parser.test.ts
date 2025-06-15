@@ -22,7 +22,7 @@ describe('OpenApiParser', () => {
       expect(result.filePath).toBe(validOpenApiFile);
       expect(result.spec).toBeDefined();
       expect(result.spec.openapi).toBe('3.0.0');
-      expect(result.spec.info.title).toBe('Sample API');
+      expect('info' in result.spec && typeof result.spec.info === 'object' && result.spec.info && 'title' in result.spec.info ? result.spec.info.title : undefined).toBe('Sample API');
     });
   });
 

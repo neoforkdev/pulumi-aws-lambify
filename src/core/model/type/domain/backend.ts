@@ -1,5 +1,5 @@
 import type { ApiRoute, OpenApiSpec } from './api-tree';
-import type { ParsedLayers } from './layer';
+import type { ParsedLayer } from './layer';
 
 /**
  * Parsed API structure without layers
@@ -14,5 +14,5 @@ export interface ParsedApi {
  */
 export interface BackendModel {
   readonly api: ParsedApi;
-  readonly layers: ParsedLayers;
+  readonly layers: readonly ParsedLayer[];
 }

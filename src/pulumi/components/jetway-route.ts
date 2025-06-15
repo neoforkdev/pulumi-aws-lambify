@@ -7,7 +7,9 @@
 import * as pulumi from '@pulumi/pulumi';
 import * as aws from '@pulumi/aws';
 import { JetwayFunction } from './jetway-function';
+import { ConfigParser } from '../../core/parser/config/parser';
 import type { ApiMethod } from '../../core/model/type/domain/api-tree';
+import type { Config } from '../../core/model/type/domain/config';
 import type { JetwayRouteArgs } from '../types/route.type';
 import { JetwayRouteArgsSchema } from '../types/route.schema';
 
@@ -24,42 +26,48 @@ export class JetwayRoute extends pulumi.ComponentResource {
     super('jetway:aws:HttpRoute', name, {}, opts);
 
     const validatedArgs = JetwayRouteArgsSchema.parse(args);
+    const { route, apiId, availableLayers, tags, environment, projectName } = validatedArgs;
 
-    const { 
-      route, 
-      apiId, 
-      availableLayers,
-      tags,
-      environment,
-      projectName
-    } = validatedArgs;
+    const functionComponents = route.methods.map((method: ApiMethod) => {
+      const configParser = new ConfigParser();
+      const configPromise = configParser.parse(method.configFile);
+      
+      return pulumi.all([pulumi.output(configPromise), availableLayers]).apply(([config, layers]: [Config, string[]]) => {
+        const mergedConfig = {
+          ...config,
+          layers: [...(config.layers || []), ...layers],
+        };
 
-    // Create Lambda function for each HTTP method
-    const functionComponents = route.methods.map((method: ApiMethod, index: number) => {
-      return new JetwayFunction(`${name}-${method.method}-fn`, {
-        method,
-        route: route.route,
-        layers: availableLayers,
-        tags,
-        environmentName: environment,
-        projectName,
-      }, { parent: this });
+        return new JetwayFunction(`${name}-${method.method}-fn`, {
+          method,
+          route: route.route,
+          config: mergedConfig,
+          tags,
+          environmentName: environment,
+          projectName,
+        }, { parent: this });
+      });
     });
 
-    // Create API routes that connect to Lambda functions
     const routeIntegrations = route.methods.map((method: ApiMethod, index: number) => {
-      return this.createHttpApiRoute(
-        `${name}-${method.method}`,
-        method,
-        route.route,
-        apiId,
-        functionComponents[index]
+      return functionComponents[index].apply(fn => 
+        this.createHttpApiRoute(
+          `${name}-${method.method}`,
+          method,
+          route.route,
+          apiId,
+          fn
+        )
       );
     });
 
-    this.integrationIds = pulumi.all(routeIntegrations.map(ri => ri.integration.id));
+    this.integrationIds = pulumi.all(routeIntegrations).apply(integrations => 
+      pulumi.all(integrations.map(ri => ri.integration.id))
+    ).apply(ids => ids);
     this.routePath = pulumi.output(route.route);
-    this.functionArns = pulumi.all(functionComponents.map(fn => fn.functionArn));
+    this.functionArns = pulumi.all(functionComponents).apply(fns => 
+      pulumi.all(fns.map(fn => fn.functionArn))
+    ).apply(arns => arns);
 
     this.registerOutputs({
       integrationIds: this.integrationIds,
@@ -78,29 +86,27 @@ export class JetwayRoute extends pulumi.ComponentResource {
     apiId: pulumi.Input<string>,
     functionComponent: JetwayFunction
   ) {
-    // Connect Lambda function to API Gateway
+    // AWS RESOURCE CREATION
     const integration = new aws.apigatewayv2.Integration(`${name}-integration`, {
-      apiId: apiId,
+      apiId,
       integrationType: 'AWS_PROXY',
       integrationUri: functionComponent.invokeArn,
-      integrationMethod: 'POST',
       payloadFormatVersion: '2.0',
     }, { parent: this });
 
-    // Create route (e.g., "GET /users")
+    // AWS RESOURCE CREATION
     const httpRoute = new aws.apigatewayv2.Route(`${name}-route`, {
-      apiId: apiId,
+      apiId,
       routeKey: `${method.method.toUpperCase()} ${routePath}`,
       target: pulumi.interpolate`integrations/${integration.id}`,
     }, { parent: this });
 
-    // Allow API Gateway to invoke the Lambda function
+    // AWS RESOURCE CREATION
     const permission = new aws.lambda.Permission(`${name}-permission`, {
-      statementId: `AllowExecutionFromHttpApi-${name}`,
       action: 'lambda:InvokeFunction',
       function: functionComponent.functionName,
       principal: 'apigateway.amazonaws.com',
-      sourceArn: pulumi.interpolate`${apiId}/*/*`,
+      sourceArn: pulumi.interpolate`arn:aws:execute-api:${aws.getRegionOutput().name}:${aws.getCallerIdentityOutput().accountId}:${apiId}/*/*`,
     }, { parent: this });
 
     return {

@@ -1,10 +1,9 @@
-/**
- * Shared Schemas for Pulumi Components
- */
-
 import { z } from 'zod';
 
-export const VpcConfigSchema = z.object({
-  subnetIds: z.array(z.string()).min(1, 'At least one subnet ID is required'),
-  securityGroupIds: z.array(z.string()).min(1, 'At least one security group ID is required'),
-}); 
+export const baseProjectSchema = {
+  projectName: z.string()
+    .min(1, 'Project name is required')
+    .regex(/^[a-zA-Z0-9-_]+$/, 'Project name must contain only alphanumeric characters, hyphens, and underscores'),
+  environmentName: z.string().min(1, 'Environment name is required'),
+  tags: z.record(z.string()).default({}),
+}; 

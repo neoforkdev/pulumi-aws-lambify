@@ -5,12 +5,11 @@
  */
 
 import * as pulumi from '@pulumi/pulumi';
-import * as aws from '@pulumi/aws';
 
 import { JetwayApiGateway } from './jetway-api-gateway';
 import { JetwayLayer } from './jetway-layer';
 import { JetwayRoute } from './jetway-route';
-import type { BackendModel } from '../types';
+
 import type { JetwayBackendArgs } from '../types/backend.type';
 import { JetwayBackendArgsSchema } from '../types/backend.schema';
 
@@ -24,6 +23,9 @@ export class JetwayBackend extends pulumi.ComponentResource {
   public readonly functionArns: pulumi.Output<string[]>;
   public readonly layerArns: pulumi.Output<string[]>;
   public readonly customDomainUrl?: pulumi.Output<string>;
+  
+  // Components
+  private readonly layers?: JetwayLayer;
 
   constructor(
     name: string, 
@@ -35,11 +37,11 @@ export class JetwayBackend extends pulumi.ComponentResource {
     // Validate with Zod
     JetwayBackendArgsSchema.parse(args);
 
-    const { backend, domain, cors, tags = {}, environment, projectName } = args;
+    const { backend, domain, cors, tags = {}, environmentName, projectName } = args;
     
     const resourceTags = {
       ...tags,
-      Environment: environment,
+      Environment: environmentName,
       Project: projectName,
       Component: 'JetwayBackend',
       ManagedBy: 'Pulumi',
@@ -47,28 +49,23 @@ export class JetwayBackend extends pulumi.ComponentResource {
 
     // Create API Gateway
     const apiGateway = new JetwayApiGateway(`${name}-api`, {
-      apiName: `${projectName}-${environment}-api`,
+      apiName: `${projectName}-${environmentName}-api`,
       description: `Jetway serverless API for ${projectName}`,
       cors,
       domain,
       tags: resourceTags,
-      environment,
+      environment: environmentName,
       projectName,
     }, { parent: this });
 
-    // Create Lambda layers if defined
-    let layerComponent: JetwayLayer | undefined;
-    let availableLayers: pulumi.Output<string[]> = pulumi.output([]);
-    
-    if (backend.layers.layers.length > 0) {
-      layerComponent = new JetwayLayer(`${name}-layers`, {
+    // Create layer components if layers are provided
+    if (backend.layers.length > 0) {
+      this.layers = new JetwayLayer(`${name}-layers`, {
         layers: backend.layers,
-        tags: resourceTags,
-        environment,
         projectName,
+        environmentName: environmentName,
+        tags,
       }, { parent: this });
-      
-      availableLayers = layerComponent.layerArns;
     }
 
     // Create API routes with Lambda functions
@@ -76,11 +73,11 @@ export class JetwayBackend extends pulumi.ComponentResource {
       return new JetwayRoute(`${name}-route-${index}`, {
         route,
         apiId: apiGateway.apiId,
-        availableLayers,
+        availableLayers: this.layers ? this.layers.layerArns : pulumi.output([]),
         tags: resourceTags,
-        environment,
+        environment: environmentName,
         projectName,
-      }, { parent: this, dependsOn: layerComponent ? [layerComponent] : [] });
+      }, { parent: this, dependsOn: this.layers ? [this.layers] : [] });
     });
 
     // Set outputs
@@ -91,7 +88,7 @@ export class JetwayBackend extends pulumi.ComponentResource {
     this.functionArns = pulumi.all(routeComponents.map(route => route.functionArns))
       .apply(arnsArrays => arnsArrays.flat());
     
-    this.layerArns = layerComponent ? layerComponent.layerArns : pulumi.output([]);
+    this.layerArns = this.layers ? this.layers.layerArns : pulumi.output([]);
 
     this.registerOutputs({
       apiUrl: this.apiUrl,

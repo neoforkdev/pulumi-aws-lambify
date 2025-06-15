@@ -27,6 +27,6 @@ export const JetwayApiGatewayArgsSchema = z.object({
   cors: CorsConfigSchema.optional(),
   domain: DomainConfigSchema.optional(),
   tags: z.record(z.string()).default({}),
-  environment: z.string().min(1, 'Environment is required').default('dev'),
+  environment: z.string().min(1, 'Environment is required'),
   projectName: z.string().min(1, 'Project name is required'),
 }); 

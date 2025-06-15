@@ -19,10 +19,3 @@ export interface ParsedLayer {
   readonly dependenciesFile?: string;
   readonly config: LayerConfig;
 }
-
-/**
- * Collection of parsed layers
- */
-export interface ParsedLayers {
-  readonly layers: readonly ParsedLayer[];
-}

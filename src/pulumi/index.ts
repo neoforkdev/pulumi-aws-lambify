@@ -1,20 +1,20 @@
 /**
- * Jetway Pulumi Components Package
+ * Jetway Pulumi Components
  * 
- * Enterprise-grade serverless infrastructure components for AWS.
+ * Infrastructure as Code components for serverless applications.
+ * Provides high-level abstractions for AWS Lambda, API Gateway, and layers.
  */
 
-// Export all components
-export * from './components';
+// Core components
+export { JetwayApiGateway } from './components/jetway-api-gateway';
+export { JetwayBackend } from './components/jetway-backend'; 
+export { JetwayFunction } from './components/jetway-function';
+export { JetwayLayer } from './components/jetway-layer';
+export { JetwayLayerResource } from './components/jetway-layer-resource';
+export { JetwayRoute } from './components/jetway-route';
 
-// Core Types
-export type { 
-  BackendModel, 
-  ParsedLayers, 
-  ParsedLayer, 
-  ApiRoute, 
-  ApiMethod 
-} from './types';
+// Types
+export * from './types';
 
 // Utilities
 export {
@@ -26,7 +26,6 @@ export {
   DEFAULT_CORS_CONFIG,
   LAMBDA_DEFAULTS,
   API_GATEWAY_DEFAULTS,
-  type VpcConfig,
 } from './utils';
 
 export const PACKAGE_INFO = {

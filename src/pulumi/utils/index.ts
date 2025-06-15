@@ -33,11 +33,11 @@ export function createResourceTags(baseConfig: {
  */
 export function sanitizeAwsResourceName(name: string): string {
   return name
-    .replace(/[^a-zA-Z0-9-_]/g, '-') // Replace special chars with hyphens
-    .replace(/-+/g, '-') // Remove duplicate hyphens
-    .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
+    .replace(/[^a-zA-Z0-9-_]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
     .toLowerCase()
-    .substring(0, 64); // AWS resource name limit
+    .substring(0, 64);
 }
 
 /**
@@ -62,7 +62,7 @@ export function generateResourceName(baseConfig: {
 /**
  * Validate required configuration
  */
-export function validateRequiredConfig<T extends Record<string, any>>(
+export function validateRequiredConfig<T extends Record<string, unknown>>(
   config: T,
   requiredFields: (keyof T)[],
   componentName: string
@@ -83,14 +83,6 @@ export function createLambdaEnvironment(customEnv: Record<string, pulumi.Input<s
     AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1',
     ...customEnv,
   };
-}
-
-/**
- * Default VPC configuration for Lambda functions
- */
-export interface VpcConfig {
-  subnetIds: pulumi.Input<string[]>;
-  securityGroupIds: pulumi.Input<string[]>;
 }
 
 /**

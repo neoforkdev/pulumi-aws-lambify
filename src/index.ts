@@ -3,19 +3,28 @@
 // Core exports
 export * from './core';
 
-// Primary parsers and types
+// Core domain types
 export type {
   LayerConfig,
   ParsedLayer,
-  ParsedLayers,
 } from './core/model/type/domain/layer';
-export type { ParsedApi, BackendModel } from './core/model/type/domain/backend';
+
 export type {
-  ApiRoute,
+  Config,
+  VpcConfig,
+} from './core/model/type/domain/config';
+
+export type {
   ApiMethod,
+  ApiRoute,
+  ApiTree,
   OpenApiSpec,
 } from './core/model/type/domain/api-tree';
-export type { Config } from './core/model/type/domain/config';
+
+export type {
+  ParsedApi,
+  BackendModel,
+} from './core/model/type/domain/backend';
 
 // Modern parsers
 export { ConfigParser } from './core/parser/config/parser';

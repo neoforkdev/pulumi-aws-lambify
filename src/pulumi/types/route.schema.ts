@@ -15,7 +15,7 @@ export const JetwayRouteArgsSchema = z.object({
       openapi: z.any().optional(), // OpenApiSpec
     }).passthrough()).min(1, 'At least one method is required'),
   }).passthrough(),
-  apiId: z.string().min(1, 'API ID is required'),
+  apiId: z.any(), // Accept pulumi.Input<string> - can be string or pulumi.Output<string>
   availableLayers: z.any().default([]), // pulumi.Input<string[]>
   tags: z.record(z.string()).default({}),
   environment: z.string().min(1, 'Environment is required'),

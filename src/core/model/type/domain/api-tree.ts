@@ -1,5 +1,5 @@
 /**
-it  * Represents an HTTP method configuration for an API endpoint.
+ * Represents an HTTP method configuration for an API endpoint.
  *
  * For example, for a GET method at "/user":
  * - method: "get"

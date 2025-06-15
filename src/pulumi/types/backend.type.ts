@@ -2,14 +2,13 @@
  * JetwayBackend component interfaces
  */
 
-import * as pulumi from '@pulumi/pulumi';
 import type { BackendModel } from '../../core/model/type/domain/backend';
 
 export interface JetwayBackendArgs {
-  backend: BackendModel;
-  environment: string;
-  projectName: string;
-  tags?: Record<string, string>;
+  readonly backend: BackendModel;
+  readonly projectName: string;
+  readonly environmentName: string;
+  readonly tags?: Record<string, string>;
   domain?: {
     domainName: string;
     certificateArn?: string;
@@ -28,4 +27,4 @@ export interface JetwayBackendOutputs {
   functionArns: string[];
   layerArns: string[];
   customDomainUrl?: string;
-} 
+}

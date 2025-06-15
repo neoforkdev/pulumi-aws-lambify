@@ -1,2 +1,3 @@
 export { LayerParser } from './parser';
-export { LayerConfigParseError, LayerConfigValidationError } from './errors';
+export { LayerConfigSchema, ParsedLayerSchema, ParsedLayersArraySchema } from './schema';
+export * from './errors';

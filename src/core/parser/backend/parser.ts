@@ -20,7 +20,7 @@ import { checkFileExists } from '../tree/utils';
  * try {
  *   const backend = await parser.parse('./');
  *   console.log('API routes found:', backend.api.routes.length);
- *   console.log('Layers found:', backend.layers.layers.length);
+ *   console.log('Layers found:', backend.layers.length);
  *   console.log('OpenAPI spec:', backend.api.openapi ? 'Yes' : 'No');
  *
  *   // Display API routes
@@ -29,7 +29,7 @@ import { checkFileExists } from '../tree/utils';
  *   });
  *
  *   // Display layers
- *   backend.layers.layers.forEach(layer => {
+ *   backend.layers.forEach(layer => {
  *     console.log(`Layer ${layer.name}: ${layer.config.runtimes.join(', ')}`);
  *     console.log(`  Description: ${layer.config.description}`);
  *     console.log(`  Dependencies: ${layer.dependenciesFile ? 'Yes' : 'No'}`);

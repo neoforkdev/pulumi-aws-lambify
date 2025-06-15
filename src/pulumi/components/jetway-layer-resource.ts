@@ -25,37 +25,20 @@ export class JetwayLayerResource extends pulumi.ComponentResource {
   ) {
     super('jetway:index:LayerResource', name, {}, opts);
 
-    const validatedArgs = JetwayLayerResourceArgsSchema.parse(args);
+    // Validate with Zod
+    JetwayLayerResourceArgsSchema.parse(args);
 
-    const {
-      layer,
-      tags,
-      projectName,
-      environmentName,
-    } = validatedArgs;
-
-    const layerName = `${projectName}-${environmentName}-${layer.name}`;
-
-    const resourceTags = {
-      ...tags,
-      Name: layerName,
-      Layer: layer.name,
-      Environment: environmentName,
-      Project: projectName,
-      Component: 'Lambda Layer',
-      ManagedBy: 'Pulumi',
-    };
+    const { layer } = args;
 
     const layerCode = this.createLayerArchive(layer);
 
-    // Create Lambda layer
+    // AWS RESOURCE CREATION
     const lambdaLayer = new aws.lambda.LayerVersion(`${name}-layer`, {
-      layerName,
-      description: layer.config.description || `Layer ${layer.name} for ${projectName}`,
+      layerName: layer.name,
+      description: layer.config.description || `Layer for ${layer.name}`,
       code: layerCode,
       compatibleRuntimes: [...layer.config.runtimes],
-      compatibleArchitectures: layer.config.compatible_architectures ? 
-        [...layer.config.compatible_architectures] : ['x86_64'],
+      compatibleArchitectures: layer.config.compatible_architectures ? [...layer.config.compatible_architectures] : ['x86_64'],
     }, { parent: this });
 
     this.layerArn = lambdaLayer.arn;
