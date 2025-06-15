@@ -1,5 +1,6 @@
 import { promises as fs } from 'fs';
 import * as path from 'path';
+
 import { DirectoryNotFoundError, NotADirectoryError } from './errors';
 
 /**
@@ -9,7 +10,10 @@ import { DirectoryNotFoundError, NotADirectoryError } from './errors';
  * @throws {DirectoryNotFoundError} Directory doesn't exist (if not optional)
  * @throws {NotADirectoryError} Path is not a directory
  */
-export async function validateDirectory(directory: string, optional: boolean = false): Promise<boolean> {
+export async function validateDirectory(
+  directory: string,
+  optional: boolean = false,
+): Promise<boolean> {
   try {
     const stats = await fs.stat(directory);
     if (!stats.isDirectory()) {
@@ -32,7 +36,9 @@ export async function validateDirectory(directory: string, optional: boolean = f
  * @param filePath Path to check
  * @returns File path if exists, undefined otherwise
  */
-export async function checkFileExists(filePath: string): Promise<string | undefined> {
+export async function checkFileExists(
+  filePath: string,
+): Promise<string | undefined> {
   try {
     await fs.access(filePath);
     return filePath;
@@ -49,16 +55,16 @@ export async function checkFileExists(filePath: string): Promise<string | undefi
  * @returns File path if exists, undefined if optional and missing
  */
 export async function validateFile<T extends Error>(
-  filePath: string, 
+  filePath: string,
   required: boolean,
-  errorFactory?: () => T
+  errorFactory?: () => T,
 ): Promise<string | undefined> {
   const exists = await checkFileExists(filePath);
-  
+
   if (!exists && required && errorFactory) {
     throw errorFactory();
   }
-  
+
   return exists;
 }
 
@@ -71,13 +77,13 @@ export async function findHandlerFiles(directory: string): Promise<string[]> {
   try {
     const entries = await fs.readdir(directory, { withFileTypes: true });
     const handlerFiles: string[] = [];
-    
+
     for (const entry of entries) {
       if (entry.isFile() && path.parse(entry.name).name === 'handler') {
         handlerFiles.push(path.join(directory, entry.name));
       }
     }
-    
+
     return handlerFiles;
   } catch {
     return [];
@@ -106,4 +112,4 @@ export class MethodFilePaths {
     this.dependenciesFile = path.join(methodDirectory, dependenciesFileName);
     this.openApiFile = path.join(methodDirectory, 'openapi.yaml');
   }
-} 
+}

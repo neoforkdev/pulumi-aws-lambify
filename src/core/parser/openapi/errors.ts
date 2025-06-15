@@ -12,7 +12,7 @@ export class OpenApiFileNotFoundError extends FileError {
       filePath,
       { filePath },
       undefined,
-      suggestion
+      suggestion,
     );
   }
 
@@ -21,7 +21,7 @@ export class OpenApiFileNotFoundError extends FileError {
       'OpenAPI file not found',
       this.filePath,
       'File does not exist or cannot be accessed',
-      this.suggestion
+      this.suggestion,
     );
   }
 }
@@ -34,7 +34,7 @@ export class OpenApiParseError extends FileError {
     const suggestion = 'Validate OpenAPI syntax and schema compliance';
     const errorType = 'Invalid OpenAPI specification';
     const description = cause.message || 'Unknown parsing error';
-    
+
     super(
       `Failed to parse OpenAPI file: ${filePath}`,
       filePath,
@@ -43,7 +43,7 @@ export class OpenApiParseError extends FileError {
       cause,
       suggestion,
       errorType,
-      description
+      description,
     );
   }
 }
@@ -56,7 +56,7 @@ export class OpenApiFileReadError extends FileError {
     const suggestion = 'Check file permissions and accessibility';
     const errorType = 'OpenAPI file read error';
     const description = cause.message || 'Unknown read error';
-    
+
     super(
       `Failed to read OpenAPI file: ${filePath}`,
       filePath,
@@ -65,7 +65,7 @@ export class OpenApiFileReadError extends FileError {
       cause,
       suggestion,
       errorType,
-      description
+      description,
     );
   }
-} 
+}

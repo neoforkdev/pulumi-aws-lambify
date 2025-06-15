@@ -4,9 +4,17 @@
 export * from './core';
 
 // Primary parsers and types
-export type { LayerConfig, ParsedLayer, ParsedLayers } from './core/model/type/domain/layer';
+export type {
+  LayerConfig,
+  ParsedLayer,
+  ParsedLayers,
+} from './core/model/type/domain/layer';
 export type { ParsedApi, BackendModel } from './core/model/type/domain/backend';
-export type { ApiRoute, ApiMethod, OpenApiSpec } from './core/model/type/domain/api-tree';
+export type {
+  ApiRoute,
+  ApiMethod,
+  OpenApiSpec,
+} from './core/model/type/domain/api-tree';
 export type { Config } from './core/model/type/domain/config';
 
 // Modern parsers
@@ -30,25 +38,32 @@ export {
   MissingConfigFileError,
   InvalidFileExtensionError,
   InvalidHttpMethodError,
-  MissingLayerConfigFileError
+  MissingLayerConfigFileError,
 } from './core/parser/tree/errors';
 
 export {
   LayerConfigParseError,
-  LayerConfigValidationError
+  LayerConfigValidationError,
 } from './core/parser/layer/errors';
 
 export {
   ConfigFileNotFoundError,
   ConfigFileReadError,
   ConfigParseError,
-  ConfigValidationError
+  ConfigValidationError,
 } from './core/parser/config/errors';
 
 export {
   OpenApiFileNotFoundError,
-  OpenApiParseError
+  OpenApiParseError,
 } from './core/parser/openapi/errors';
 
 // Pulumi components
-export { JetwayApi } from './pulumi/components/jetway-api'; 
+export {
+  JetwayBackend,
+  JetwayRoute,
+  JetwayLayer,
+  JetwayFunction,
+  JetwayApiGateway,
+  JetwayLayerResource,
+} from './pulumi';

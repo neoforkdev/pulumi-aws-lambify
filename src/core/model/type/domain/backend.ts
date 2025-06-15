@@ -15,4 +15,4 @@ export interface ParsedApi {
 export interface BackendModel {
   readonly api: ParsedApi;
   readonly layers: ParsedLayers;
-} 
+}

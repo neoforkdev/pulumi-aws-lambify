@@ -4,236 +4,109 @@ const YELLOW = '\x1b[33m';
 const BLUE = '\x1b[34m';
 const GRAY = '\x1b[90m';
 
-enum Severity {
-  Error = 'error',
-  Warning = 'warning',
-  Info = 'info',
-  Debug = 'debug',
+export enum LogLevel {
+  ERROR = 'error',
+  WARNING = 'warning',
+  INFO = 'info',
+  DEBUG = 'debug',
 }
 
-// Export Severity for public use
-export { Severity as LogLevel };
-
-// Log level hierarchy (higher numbers = more verbose)
-const LogLevelHierarchy: Record<Severity, number> = {
-  [Severity.Error]: 0,
-  [Severity.Warning]: 1,
-  [Severity.Info]: 2,
-  [Severity.Debug]: 3,
+const LOG_LEVEL_HIERARCHY: Record<LogLevel, number> = {
+  [LogLevel.ERROR]: 0,
+  [LogLevel.WARNING]: 1,
+  [LogLevel.INFO]: 2,
+  [LogLevel.DEBUG]: 3,
 };
 
-const ConsoleColor: Record<Severity, string> = {
-  [Severity.Error]: RED,
-  [Severity.Warning]: YELLOW,
-  [Severity.Info]: BLUE,
-  [Severity.Debug]: GRAY,
+const CONSOLE_COLORS: Record<LogLevel, string> = {
+  [LogLevel.ERROR]: RED,
+  [LogLevel.WARNING]: YELLOW,
+  [LogLevel.INFO]: BLUE,
+  [LogLevel.DEBUG]: GRAY,
 };
 
-/**
- * Parse log level from environment variable or return default
- */
-function getLogLevelFromEnv(): Severity {
+function getLogLevelFromEnv(): LogLevel {
   const envLevel = process.env.JETWAY_LOG_LEVEL?.toLowerCase();
-  
+
   switch (envLevel) {
     case 'error':
-      return Severity.Error;
+      return LogLevel.ERROR;
     case 'warning':
     case 'warn':
-      return Severity.Warning;
+      return LogLevel.WARNING;
     case 'info':
-      return Severity.Info;
+      return LogLevel.INFO;
     case 'debug':
-      return Severity.Debug;
+      return LogLevel.DEBUG;
     default:
-      return Severity.Error; // Default to Error level
+      return LogLevel.ERROR;
   }
 }
 
-/**
- * Check if colors should be disabled from environment variable
- */
-function getColorDisabledFromEnv(): boolean {
-  // Check common environment variables for disabling colors
-  return !!(
-    process.env.NO_COLOR ||
-    process.env.JETWAY_NO_COLOR ||
-    process.env.JETWAY_DISABLE_COLOR
-  );
+function isColorDisabled(): boolean {
+  return !!(process.env.NO_COLOR || process.env.JETWAY_NO_COLOR);
 }
 
 export class Logger {
-  private prefix: string;
-  private prettifyJson: boolean;
-  private instanceLogLevel?: Severity;
-  private instanceColorDisabled?: boolean;
-  private static globalLogLevel?: Severity;
-  private static globalColorDisabled?: boolean;
+  private readonly prefix: string;
+  private static globalLogLevel?: LogLevel;
 
-  constructor(prefix: string, prettifyJson: boolean = true) {
+  constructor(prefix: string) {
     this.prefix = prefix;
-    this.prettifyJson = prettifyJson;
   }
 
-  /**
-   * Set global log level (overrides environment variable)
-   */
-  static setLevel(level: Severity): void {
+  static setLevel(level: LogLevel): void {
     Logger.globalLogLevel = level;
   }
 
-  /**
-   * Reset global log level to use environment variable
-   */
   static resetLevel(): void {
     Logger.globalLogLevel = undefined;
   }
 
-  /**
-   * Disable colors globally (overrides environment variable)
-   */
-  static disableColor(): void {
-    Logger.globalColorDisabled = true;
+  private getEffectiveLogLevel(): LogLevel {
+    return Logger.globalLogLevel ?? getLogLevelFromEnv();
   }
 
-  /**
-   * Enable colors globally (overrides environment variable)
-   */
-  static enableColor(): void {
-    Logger.globalColorDisabled = false;
-  }
-
-  /**
-   * Reset global color setting to use environment variable
-   */
-  static resetColor(): void {
-    Logger.globalColorDisabled = undefined;
-  }
-
-  /**
-   * Set instance log level (overrides global and environment variable)
-   */
-  setLevel(level: Severity): void {
-    this.instanceLogLevel = level;
-  }
-
-  /**
-   * Reset instance log level to use global/environment level
-   */
-  resetLevel(): void {
-    this.instanceLogLevel = undefined;
-  }
-
-  /**
-   * Disable colors for this logger instance (overrides global and environment variable)
-   */
-  disableColor(): void {
-    this.instanceColorDisabled = true;
-  }
-
-  /**
-   * Enable colors for this logger instance (overrides global and environment variable)
-   */
-  enableColor(): void {
-    this.instanceColorDisabled = false;
-  }
-
-  /**
-   * Reset instance color setting to use global/environment setting
-   */
-  resetColor(): void {
-    this.instanceColorDisabled = undefined;
-  }
-
-  /**
-   * Get current effective log level
-   */
-  private getEffectiveLogLevel(): Severity {
-    // Priority: instance level > global level > environment variable
-    return this.instanceLogLevel ?? Logger.globalLogLevel ?? getLogLevelFromEnv();
-  }
-
-  /**
-   * Check if colors should be disabled
-   */
-  private shouldDisableColor(): boolean {
-    // Priority: instance level > global level > environment variable
-    return this.instanceColorDisabled ?? Logger.globalColorDisabled ?? getColorDisabledFromEnv();
-  }
-
-  /**
-   * Check if a message should be logged based on severity
-   */
-  private shouldLog(severity: Severity): boolean {
+  private shouldLog(level: LogLevel): boolean {
     const effectiveLevel = this.getEffectiveLogLevel();
-    return LogLevelHierarchy[severity] <= LogLevelHierarchy[effectiveLevel];
+    return LOG_LEVEL_HIERARCHY[level] <= LOG_LEVEL_HIERARCHY[effectiveLevel];
   }
 
-  /**
-   * Log an info message
-   */
-  info(message: string, ...args: any[]): void {
-    if (this.shouldLog(Severity.Info)) {
-      this.log(Severity.Info, message, ...args);
-    }
-  }
+  private log(level: LogLevel, message: string, ...args: unknown[]): void {
+    if (!this.shouldLog(level)) return;
 
-  /**
-   * Log an error message
-   */
-  error(message: string, error?: any, ...args: any[]): void {
-    if (this.shouldLog(Severity.Error)) {
-      this.log(Severity.Error, message, ...args);
-      if (error) {
-        const shouldDisableColor = this.shouldDisableColor();
-        const colorStart = shouldDisableColor ? '' : RED;
-        const colorEnd = shouldDisableColor ? '' : RESET;
-        console.log(`${colorStart}${error}${colorEnd}`);
-      }
-    }
-  }
-
-  /**
-   * Log a warning message
-   */
-  warning(message: string, ...args: any[]): void {
-    if (this.shouldLog(Severity.Warning)) {
-      this.log(Severity.Warning, message, ...args);
-    }
-  }
-
-  /**
-   * Log a debug message
-   */
-  debug(message: string, ...args: any[]): void {
-    if (this.shouldLog(Severity.Debug)) {
-      this.log(Severity.Debug, message, ...args);
-    }
-  }
-
-  /**
-   * Generic log method
-   */
-  private log(severity: Severity, message: string, ...args: any[]): void {
-    const shouldDisableColor = this.shouldDisableColor();
-    const color = shouldDisableColor ? '' : ConsoleColor[severity];
-    const reset = shouldDisableColor ? '' : RESET;
+    const colorStart = isColorDisabled() ? '' : CONSOLE_COLORS[level];
+    const colorEnd = isColorDisabled() ? '' : RESET;
     const timestamp = new Date().toISOString();
-
-    const formattedMessage =
-      args.length > 0
-        ? `${message} ${args.map((arg) => (typeof arg === 'object' ? this.formatObject(arg) : arg)).join(' ')}`
-        : message;
+    const formattedArgs = args
+      .map((arg) =>
+        typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg),
+      )
+      .join(' ');
 
     console.log(
-      `${color}[${timestamp}] [${this.prefix}] ${severity.toUpperCase()}: ${formattedMessage}${reset}`,
+      `${colorStart}[${timestamp}] ${level.toUpperCase()} [${this.prefix}] ${message}${formattedArgs ? ' ' + formattedArgs : ''}${colorEnd}`,
     );
   }
 
-  /**
-   * Format object based on stringify setting
-   */
-  private formatObject(obj: any): string {
-    return this.prettifyJson ? JSON.stringify(obj, null, 2) : JSON.stringify(obj);
+  info(message: string, ...args: unknown[]): void {
+    this.log(LogLevel.INFO, message, ...args);
+  }
+
+  error(message: string, error?: unknown, ...args: unknown[]): void {
+    this.log(LogLevel.ERROR, message, ...args);
+    if (error) {
+      const colorStart = isColorDisabled() ? '' : RED;
+      const colorEnd = isColorDisabled() ? '' : RESET;
+      console.log(`${colorStart}${error}${colorEnd}`);
+    }
+  }
+
+  warning(message: string, ...args: unknown[]): void {
+    this.log(LogLevel.WARNING, message, ...args);
+  }
+
+  debug(message: string, ...args: unknown[]): void {
+    this.log(LogLevel.DEBUG, message, ...args);
   }
 }

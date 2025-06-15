@@ -1,16 +1,15 @@
-function example() {
-  const message = 'Hello World';
-  return message;
+export const _example = 'This is a test file for logger tests';
+
+// Test functions and classes that may be used in logger tests
+
+function someFunction() {
+  return 'test';
 }
 
-class TestClass {
-  private value: string;
-
-  constructor(val: string) {
-    this.value = val;
-  }
-
+class _TestClass {
   getValue() {
-    return this.value;
+    return 'test value';
   }
 }
+
+export { someFunction, _TestClass };

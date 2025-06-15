@@ -1,5 +1,5 @@
 /**
- * Represents an HTTP method configuration for an API endpoint.
+it  * Represents an HTTP method configuration for an API endpoint.
  *
  * For example, for a GET method at "/user":
  * - method: "get"
@@ -47,7 +47,7 @@ export type ApiLayer = {
  */
 export type OpenApiSpec = {
   readonly filePath: string;
-  readonly spec: any; // The parsed OpenAPI specification object
+  readonly spec: Record<string, unknown>; // The parsed OpenAPI specification object
 };
 
 /**

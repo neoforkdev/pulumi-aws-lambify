@@ -1,10 +1,14 @@
 import { describe, it, expect } from 'vitest';
-import { LambifyError, FileError } from '../../../../src/core/model/type/core/errors';
+
+import {
+  LambifyError,
+  FileError,
+} from '../../../../src/core/model/type/core/errors';
 import {
   ConfigFileNotFoundError,
   ConfigFileReadError,
   ConfigParseError,
-  ConfigValidationError
+  ConfigValidationError,
 } from '../../../../src/core/parser/config/errors';
 
 describe('Config Parser Errors', () => {
@@ -22,7 +26,7 @@ describe('Config Parser Errors', () => {
 
     it('should include helpful solution suggestions', () => {
       const error = new ConfigFileNotFoundError('/config.yaml');
-      
+
       expect(error.suggestion).toBeDefined();
       expect(typeof error.suggestion).toBe('string');
       expect(error.suggestion).toBe('Create the config file');
@@ -43,8 +47,11 @@ describe('Config Parser Errors', () => {
     });
 
     it('should include helpful solution suggestions', () => {
-      const error = new ConfigFileReadError('/config.yaml', new Error('Read error'));
-      
+      const error = new ConfigFileReadError(
+        '/config.yaml',
+        new Error('Read error'),
+      );
+
       expect(error.suggestion).toBeDefined();
       expect(error.suggestion).toBe('Check file permissions: chmod 644 <file>');
     });
@@ -53,7 +60,11 @@ describe('Config Parser Errors', () => {
   describe('ConfigParseError', () => {
     it('should create file error with YAML parse error', () => {
       const cause = new Error('YAML syntax error');
-      const error = new ConfigParseError('/path/to/config.yaml', 'yaml content', cause);
+      const error = new ConfigParseError(
+        '/path/to/config.yaml',
+        'yaml content',
+        cause,
+      );
 
       expect(error.name).toBe('ConfigParseError');
       expect(error.filePath).toBe('/path/to/config.yaml');
@@ -64,16 +75,44 @@ describe('Config Parser Errors', () => {
     });
 
     it('should include helpful solution suggestions', () => {
-      const error = new ConfigParseError('/config.yaml', 'content', new Error('Parse error'));
-      
-      expect(error.suggestion).toBe('Check YAML syntax: indentation, colons, quotes');
+      const error = new ConfigParseError(
+        '/config.yaml',
+        'content',
+        new Error('Parse error'),
+      );
+
+      expect(error.suggestion).toBe(
+        'Check YAML syntax: indentation, colons, quotes',
+      );
     });
 
     it('should include suggestions in formatted error messages', () => {
-      const error = new ConfigParseError('/config.yaml', 'content', new Error('Invalid YAML'));
+      const error = new ConfigParseError(
+        '/config.yaml',
+        'content',
+        new Error('Invalid YAML'),
+      );
       const formatted = error.toString();
-      
-      expect(formatted).toContain('= help: Check YAML syntax: indentation, colons, quotes');
+
+      expect(formatted).toContain(
+        '= help: Check YAML syntax: indentation, colons, quotes',
+      );
+    });
+
+    it('should serialize to JSON correctly', () => {
+      const error = new ConfigParseError(
+        '/test.yaml',
+        'test: invalid',
+        new Error('test'),
+      );
+      const json = error.toJSON() as Record<string, unknown>;
+
+      expect(json.name).toBe('ConfigParseError');
+      expect(json.message).toContain('Failed to parse YAML in config file');
+      expect(json.suggestion).toBe(
+        'Check YAML syntax: indentation, colons, quotes',
+      );
+      expect(json.context).toEqual({ filePath: '/test.yaml' });
     });
   });
 
@@ -81,7 +120,7 @@ describe('Config Parser Errors', () => {
     it('should create validation error with multiple issues', () => {
       const issues = [
         { path: ['runtime'], message: 'Required' },
-        { path: ['memory'], message: 'Must be a number' }
+        { path: ['memory'], message: 'Must be a number' },
       ];
       const error = new ConfigValidationError('/path/to/config.yaml', issues);
 
@@ -95,18 +134,22 @@ describe('Config Parser Errors', () => {
     it('should include helpful solution suggestions', () => {
       const issues = [{ path: ['runtime'], message: 'Required' }];
       const error = new ConfigValidationError('/config.yaml', issues);
-      
+
       expect(error.suggestion).toBeDefined();
       expect(typeof error.suggestion).toBe('string');
-      expect(error.suggestion).toBe('Fix validation issues and ensure all required fields are present');
+      expect(error.suggestion).toBe(
+        'Fix validation issues and ensure all required fields are present',
+      );
     });
 
     it('should include suggestions in formatted error messages', () => {
       const issues = [{ path: ['runtime'], message: 'Required' }];
       const error = new ConfigValidationError('/config.yaml', issues);
       const formatted = error.toString();
-      
-      expect(formatted).toContain('= help: Fix validation issues and ensure all required fields are present');
+
+      expect(formatted).toContain(
+        '= help: Fix validation issues and ensure all required fields are present',
+      );
     });
   });
 
@@ -116,10 +159,12 @@ describe('Config Parser Errors', () => {
         new ConfigFileNotFoundError('/test.yaml'),
         new ConfigFileReadError('/test.yaml', new Error('read error')),
         new ConfigParseError('/test.yaml', 'source', new Error('parse error')),
-        new ConfigValidationError('/test.yaml', [{ path: [], message: 'error' }])
+        new ConfigValidationError('/test.yaml', [
+          { path: [], message: 'error' },
+        ]),
       ];
 
-      errors.forEach(error => {
+      errors.forEach((error) => {
         expect(error).toBeInstanceOf(Error);
         expect(error).toBeInstanceOf(LambifyError);
         expect(error).toBeInstanceOf(FileError);
@@ -133,7 +178,7 @@ describe('Config Parser Errors', () => {
 
     it('should serialize to JSON with suggestions included', () => {
       const error = new ConfigFileNotFoundError('/test.yaml');
-      const json = error.toJSON() as any;
+      const json = error.toJSON() as Record<string, unknown>;
 
       expect(json).toHaveProperty('name');
       expect(json).toHaveProperty('message');
@@ -141,7 +186,7 @@ describe('Config Parser Errors', () => {
       expect(json).toHaveProperty('context');
       expect(json).toHaveProperty('suggestion');
       expect(typeof json.suggestion).toBe('string');
-      expect(json.suggestion.length).toBeGreaterThan(0);
+      expect(json.suggestion).toBeTruthy();
     });
   });
-}); 
+});

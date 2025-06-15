@@ -1,4 +1,4 @@
 memory: 512
 timeout: 60
 environment:
-  ORDERS_TABLE: orders-prod 
+  ORDERS_TABLE: orders-prod

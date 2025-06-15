@@ -58,4 +58,4 @@ components:
           type: string
         email:
           type: string
-          format: email 
+          format: email

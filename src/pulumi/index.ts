@@ -1,30 +1,39 @@
-import type { ApiTree } from '../core/model/type/domain/api-tree';
-import type { Config } from '../core/model/type/domain/config';
-
-// Options for deploying an API tree
-export interface DeployApiTreeOptions {
-  tags?: Record<string, string>;
-  // Add other global options as needed
-}
-
 /**
- * Deploys an API tree using Pulumi.
- * @param apiTree The parsed API tree structure
- * @param options Deployment options (global tags, etc.)
+ * Jetway Pulumi Components Package
+ * 
+ * Enterprise-grade serverless infrastructure components for AWS.
  */
-export function deployApiTree(
-  apiTree: ApiTree,
-  options: DeployApiTreeOptions = {}
-) {
-  // TODO: Implement Pulumi deployment logic for routes, layers, and OpenAPI
-  // This is a skeleton function
-  // Example: Iterate over apiTree.routes and deploy each Lambda/API Gateway
-  // Use options.tags for global resource tagging
-  
-  // Placeholder return
-  return {
-    apiTree,
-    options,
-    resources: [] // Will contain Pulumi resources
-  };
-}
+
+// Export all components
+export * from './components';
+
+// Core Types
+export type { 
+  BackendModel, 
+  ParsedLayers, 
+  ParsedLayer, 
+  ApiRoute, 
+  ApiMethod 
+} from './types';
+
+// Utilities
+export {
+  createResourceTags,
+  sanitizeAwsResourceName,
+  generateResourceName,
+  validateRequiredConfig,
+  createLambdaEnvironment,
+  DEFAULT_CORS_CONFIG,
+  LAMBDA_DEFAULTS,
+  API_GATEWAY_DEFAULTS,
+  type VpcConfig,
+} from './utils';
+
+export const PACKAGE_INFO = {
+  name: '@jetway/pulumi-components',
+  version: '1.0.0',
+  description: 'Enterprise serverless infrastructure components for AWS',
+  license: 'Apache-2.0',
+  repository: 'https://github.com/your-org/jetway',
+  keywords: ['pulumi', 'aws', 'serverless', 'lambda', 'api-gateway'],
+} as const; 

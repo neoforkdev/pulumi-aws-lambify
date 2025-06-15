@@ -1,5 +1,5 @@
 name: emoji
-description: "Maps moods to corresponding emojis"
+description: 'Maps moods to corresponding emojis'
 runtimes:
   - python3.11
   - python3.9
@@ -8,4 +8,4 @@ compatible_architectures:
 include:
   - emoji_layer.py
 exclude:
-  - tests/ 
+  - tests/

@@ -4,7 +4,6 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "outDir": "dist",
-    "rootDir": "src",
     "strict": true,
     "noImplicitAny": true,
     "noEmit": true,
@@ -12,6 +11,6 @@
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true
   },
-  "include": ["src", "tests"],
+  "include": ["src", "tests", "examples", "playground.ts"],
   "exclude": ["node_modules", "dist"]
 }

@@ -13,7 +13,7 @@ export class LayerConfigParseError extends FileError {
       cause,
       'Verify the YAML syntax in the layer configuration file',
       'Layer config parse error',
-      `Layer: ${layerName}\nFailed to parse layer.yaml configuration file`
+      `Layer: ${layerName}\nFailed to parse layer.yaml configuration file`,
     );
   }
 }
@@ -22,7 +22,11 @@ export class LayerConfigParseError extends FileError {
  * Error thrown when layer configuration is missing required fields
  */
 export class LayerConfigValidationError extends FileError {
-  constructor(configFile: string, layerName: string, validationMessage: string) {
+  constructor(
+    configFile: string,
+    layerName: string,
+    validationMessage: string,
+  ) {
     super(
       `Layer config validation error: ${validationMessage}`,
       configFile,
@@ -31,7 +35,7 @@ export class LayerConfigValidationError extends FileError {
       undefined,
       'Add the required fields to the layer.yaml configuration file',
       'Layer config validation error',
-      `Layer: ${layerName}\n${validationMessage}`
+      `Layer: ${layerName}\n${validationMessage}`,
     );
   }
-} 
+}

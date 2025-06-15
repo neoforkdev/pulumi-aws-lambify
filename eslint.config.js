@@ -6,7 +6,7 @@ export default [
   // Base recommended configuration
   js.configs.recommended,
   ...ts.configs.recommended,
-  
+
   // Configuration for JavaScript files
   {
     files: ['**/*.{js,mjs,cjs}'],
@@ -22,18 +22,18 @@ export default [
         global: 'readonly',
         module: 'readonly',
         require: 'readonly',
-        exports: 'readonly'
-      }
+        exports: 'readonly',
+      },
     },
     plugins: {
-      import: importPlugin
+      import: importPlugin,
     },
     rules: {
       'no-unused-vars': ['warn'],
-      'import/order': ['warn', { 'newlines-between': 'always' }]
-    }
+      'import/order': ['warn', { 'newlines-between': 'always' }],
+    },
   },
-  
+
   // Configuration for TypeScript files
   {
     files: ['**/*.{ts,tsx}'],
@@ -42,27 +42,22 @@ export default [
       sourceType: 'module',
       parser: ts.parser,
       parserOptions: {
-        project: './tsconfig.json'
-      }
+        project: './tsconfig.json',
+      },
     },
     plugins: {
       '@typescript-eslint': ts.plugin,
-      import: importPlugin
+      import: importPlugin,
     },
     rules: {
       'no-unused-vars': 'off',
       '@typescript-eslint/no-unused-vars': ['warn'],
-      'import/order': ['warn', { 'newlines-between': 'always' }]
-    }
+      'import/order': ['warn', { 'newlines-between': 'always' }],
+    },
   },
-  
+
   // Ignore patterns
   {
-    ignores: [
-      'node_modules/**',
-      'dist/**',
-      '.git/**',
-      'coverage/**'
-    ]
-  }
-]; 
+    ignores: ['node_modules/**', 'dist/**', '.git/**', 'coverage/**'],
+  },
+];

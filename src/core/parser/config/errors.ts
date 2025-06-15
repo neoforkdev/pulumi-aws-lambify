@@ -1,6 +1,5 @@
 // Core error classes for Jetway
-import { LambifyError, FileError, ErrorFormatter } from '../../model/type/core/errors';
-import { z } from 'zod';
+import { FileError, ErrorFormatter } from '../../model/type/core/errors';
 
 /**
  * Error thrown when config file is not found
@@ -10,7 +9,7 @@ export class ConfigFileNotFoundError extends FileError {
     const suggestion = 'Create the config file';
     const errorType = 'File not found';
     const description = 'File does not exist or cannot be accessed';
-    
+
     super(
       `Config file not found: ${filePath}`,
       filePath,
@@ -19,7 +18,7 @@ export class ConfigFileNotFoundError extends FileError {
       undefined,
       suggestion,
       errorType,
-      description
+      description,
     );
   }
 }
@@ -32,7 +31,7 @@ export class ConfigFileReadError extends FileError {
     const suggestion = 'Check file permissions: chmod 644 <file>';
     const errorType = 'File read error';
     const description = cause.message || 'Unknown read error';
-    
+
     super(
       `Failed to read config file: ${filePath}`,
       filePath,
@@ -41,7 +40,7 @@ export class ConfigFileReadError extends FileError {
       cause,
       suggestion,
       errorType,
-      description
+      description,
     );
   }
 }
@@ -60,7 +59,7 @@ export class ConfigParseError extends FileError {
       filePath,
       { filePath },
       cause,
-      suggestion
+      suggestion,
     );
     this.source = source;
   }
@@ -72,7 +71,7 @@ export class ConfigParseError extends FileError {
       this.source,
       this.cause!,
       'Invalid YAML syntax',
-      this.suggestion
+      this.suggestion,
     );
   }
 }
@@ -83,15 +82,19 @@ export class ConfigParseError extends FileError {
 export class ConfigValidationError extends FileError {
   private readonly issues: Array<{ path: string[]; message: string }>;
 
-  constructor(filePath: string, issues: Array<{ path: string[]; message: string }>) {
-    const suggestion = 'Fix validation issues and ensure all required fields are present';
+  constructor(
+    filePath: string,
+    issues: Array<{ path: string[]; message: string }>,
+  ) {
+    const suggestion =
+      'Fix validation issues and ensure all required fields are present';
     super(
       `Config validation failed: ${filePath}`,
       filePath,
       filePath,
       { filePath, issues },
       undefined,
-      suggestion
+      suggestion,
     );
     this.issues = issues;
   }
@@ -102,7 +105,7 @@ export class ConfigValidationError extends FileError {
       this.filePath,
       this.issues,
       undefined,
-      this.suggestion
+      this.suggestion,
     );
   }
-} 
+}

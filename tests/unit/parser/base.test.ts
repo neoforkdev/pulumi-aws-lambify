@@ -1,18 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+
 import { Parser } from '../../../src/core/parser/base';
 import { Logger, LogLevel } from '../../../src/core/logger/logger';
 
-// Concrete implementation for testing
+// Test parser implementation
 class TestParser extends Parser<string, string> {
-  constructor(loggerPrefix: string = 'TestParser') {
-    super(loggerPrefix);
-  }
-
   async parsingStep(input: string): Promise<string> {
     if (input === 'error') {
       throw new Error('Test error');
     }
-    
     return `parsed: ${input}`;
   }
 }
@@ -22,132 +18,133 @@ describe('Parser Base Class', () => {
 
   beforeEach(() => {
     consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-    Logger.resetLevel(); // Reset to default
+    Logger.setLevel(LogLevel.DEBUG); // Enable all logs for testing
   });
 
   afterEach(() => {
     consoleSpy.mockRestore();
+    Logger.resetLevel();
   });
 
   describe('Constructor and Logger Setup', () => {
     it('should create parser with custom logger prefix', () => {
-      const parser = new TestParser('CustomParser');
-      
-      // Access the protected logger for testing
-      const logger = (parser as any).logger;
-      expect(logger).toBeDefined();
+      const parser = new TestParser('CustomPrefix');
+      expect(parser).toBeInstanceOf(Parser);
     });
 
     it('should create parser with default prefix', () => {
-      const parser = new TestParser();
-      
-      // Access the protected logger for testing
-      const logger = (parser as any).logger;
-      expect(logger).toBeDefined();
+      const parser = new TestParser('TestParser');
+      expect(parser).toBeInstanceOf(Parser);
     });
   });
 
   describe('Automatic Logging in Parse Method', () => {
-    beforeEach(() => {
-      Logger.setLevel(LogLevel.Info); // Enable INFO level for these tests
-    });
-
     it('should log complete successful parse flow', async () => {
       const parser = new TestParser('TestParser');
-      
-      const result = await parser.parse('test-input');
-      
-      expect(result).toBe('parsed: test-input');
-      
+
+      const result = await parser.parse('test input');
+
+      expect(result).toBe('parsed: test input');
+
       // All logging is automatically handled by base class
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[TestParser] INFO: Starting parse operation')
+        expect.stringContaining('INFO [TestParser] Starting parse operation'),
       );
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[TestParser] INFO: Parse operation completed successfully')
+        expect.stringContaining(
+          'INFO [TestParser] Parse operation completed successfully',
+        ),
       );
     });
 
     it('should log error flow correctly', async () => {
       const parser = new TestParser('TestParser');
-      
+
       await expect(parser.parse('error')).rejects.toThrow('Test error');
-      
+
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[TestParser] ERROR: Parse operation failed')
+        expect.stringContaining('ERROR [TestParser] Parse operation failed'),
       );
     });
   });
 
   describe('Abstract Contract Enforcement', () => {
     it('should enforce parsingStep method implementation', () => {
-      expect(TestParser.prototype.parsingStep).toBeDefined();
-      expect(TestParser.prototype.parse).toBeDefined();
-      
-      const parser = new TestParser();
-      expect(parser).toBeInstanceOf(Parser);
+      // This test verifies TypeScript compilation - if the abstract method isn't implemented,
+      // the TypeScript compiler will catch it at compile time
+      expect(() => new TestParser('Test')).not.toThrow();
     });
   });
 
   describe('Generic Type Safety', () => {
     it('should maintain type safety for input and output', async () => {
-      const stringParser = new TestParser('StringParser');
-      
-      const result = await stringParser.parse('test');
-      
+      const parser = new TestParser('TestParser');
+
+      // Input should be string, output should be string
+      const result: string = await parser.parse('input');
       expect(typeof result).toBe('string');
-      expect(result).toBe('parsed: test');
     });
 
     it('should support different generic types', () => {
-      class NumberParser extends Parser<number, boolean> {
-        constructor() {
-          super('NumberParser');
-        }
-
-        async parsingStep(input: number): Promise<boolean> {
-          return input > 0;
+      // Different parser with different types
+      class NumberParser extends Parser<number, number> {
+        async parsingStep(_input: number): Promise<number> {
+          return _input * 2;
         }
       }
 
-      const numberParser = new NumberParser();
+      const numberParser = new NumberParser('NumberParser');
       expect(numberParser).toBeInstanceOf(Parser);
     });
   });
 
   describe('Inheritance Benefits', () => {
-    beforeEach(() => {
-      Logger.setLevel(LogLevel.Info); // Enable INFO level for these tests
-    });
-
     it('should provide consistent logging across all parsers', async () => {
-      const parser1 = new TestParser('Parser1');
-      const parser2 = new TestParser('Parser2');
-      
+      class Parser1 extends Parser<string, string> {
+        async parsingStep(input: string): Promise<string> {
+          return `parser1: ${input}`;
+        }
+      }
+
+      class Parser2 extends Parser<string, string> {
+        async parsingStep(input: string): Promise<string> {
+          return `parser2: ${input}`;
+        }
+      }
+
+      const parser1 = new Parser1('Parser1');
+      const parser2 = new Parser2('Parser2');
+
       await parser1.parse('input1');
       await parser2.parse('input2');
-      
+
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[Parser1] INFO: Starting parse operation')
+        expect.stringContaining('INFO [Parser1] Starting parse operation'),
       );
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[Parser2] INFO: Starting parse operation')
+        expect.stringContaining('INFO [Parser2] Starting parse operation'),
       );
     });
 
     it('should enforce standard error handling patterns', async () => {
-      const parser = new TestParser('ErrorParser');
-      
+      class ErrorParser extends Parser<string, string> {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        async parsingStep(_input: string): Promise<string> {
+          throw new Error('Test error');
+        }
+      }
+
+      const parser = new ErrorParser('ErrorParser');
+
       try {
-        await parser.parse('error');
+        await parser.parse('input');
       } catch (error) {
         expect(error).toBeInstanceOf(Error);
-        expect((error as Error).message).toBe('Test error');
       }
-      
+
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[ErrorParser] ERROR: Parse operation failed')
+        expect.stringContaining('ERROR [ErrorParser] Parse operation failed'),
       );
     });
   });
-}); 
+});

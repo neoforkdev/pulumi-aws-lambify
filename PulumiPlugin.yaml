@@ -1,0 +1,148 @@
+# Pulumi Component Plugin Configuration
+# Enables multi-language support for Jetway components
+
+name: jetway-components
+runtime: nodejs
+main: dist/index.js
+
+description: "Enterprise serverless infrastructure components for AWS using Jetway"
+
+# Component configuration
+components:
+  jetway:index:Backend:
+    description: "Complete serverless backend orchestrator"
+    properties:
+      backend:
+        description: "Parsed backend configuration from Jetway parser"
+        type: "object"
+        required: true
+      domain:
+        description: "Optional custom domain configuration"
+        type: "object"
+        required: false
+      cors:
+        description: "CORS configuration for API Gateway"
+        type: "object"
+        required: false
+      tags:
+        description: "Resource tags"
+        type: "object"
+        required: false
+      environment:
+        description: "Environment name (dev, staging, prod)"
+        type: "string"
+        required: false
+      projectName:
+        description: "Project name for resource naming"
+        type: "string"
+        required: false
+
+  jetway:aws:ApiGateway:
+    description: "API Gateway component with CORS and custom domain support"
+    properties:
+      apiName:
+        description: "API Gateway name"
+        type: "string"
+        required: true
+      description:
+        description: "API description"
+        type: "string"
+        required: false
+      cors:
+        description: "CORS configuration"
+        type: "object"
+        required: false
+      domain:
+        description: "Custom domain configuration"
+        type: "object"
+        required: false
+
+  jetway:aws:Route:
+    description: "Single API route with Lambda functions"
+    properties:
+      route:
+        description: "Route configuration"
+        type: "object"
+        required: true
+      apiId:
+        description: "API Gateway REST API ID"
+        type: "string"
+        required: true
+      parentResourceId:
+        description: "Parent resource ID"
+        type: "string"
+        required: true
+      availableLayers:
+        description: "Available Lambda layers"
+        type: "array"
+        required: false
+
+  jetway:aws:Function:
+    description: "Individual Lambda function"
+    properties:
+      method:
+        description: "API method configuration"
+        type: "object"
+        required: true
+      functionName:
+        description: "Lambda function name"
+        type: "string"
+        required: true
+      layers:
+        description: "Lambda layers to attach"
+        type: "array"
+        required: false
+
+  jetway:aws:Layer:
+    description: "Lambda layer manager"
+    properties:
+      layers:
+        description: "Parsed layers configuration"
+        type: "object"
+        required: true
+      layersBucket:
+        description: "S3 bucket for layer packages"
+        type: "string"
+        required: false
+
+  jetway:aws:LayerResource:
+    description: "Individual Lambda layer"
+    properties:
+      layer:
+        description: "Single layer configuration"
+        type: "object"
+        required: true
+      layersBucket:
+        description: "S3 bucket for layer package"
+        type: "string"
+        required: false
+      layerPackage:
+        description: "Layer zip file path or content"
+        type: "string"
+        required: true
+
+# Language SDK generation
+supportedLanguages:
+  - typescript
+  - python
+  - go
+  - csharp
+  - java
+
+# Package metadata
+repository: "https://github.com/your-org/jetway"
+license: "Apache-2.0"
+keywords:
+  - pulumi
+  - aws
+  - serverless
+  - lambda
+  - api-gateway
+  - infrastructure
+  - iac
+
+# Provider configuration
+provider:
+  name: jetway-components
+  version: "1.0.0"
+  pluginDownloadURL: "https://github.com/your-org/jetway/releases" 

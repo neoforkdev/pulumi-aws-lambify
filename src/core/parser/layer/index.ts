@@ -1,2 +1,2 @@
 export { LayerParser } from './parser';
-export { LayerConfigParseError, LayerConfigValidationError } from './errors'; 
+export { LayerConfigParseError, LayerConfigValidationError } from './errors';

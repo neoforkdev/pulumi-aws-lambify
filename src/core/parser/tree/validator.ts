@@ -6,7 +6,7 @@ import * as path from 'path';
 export enum SupportedFileExtension {
   PYTHON = 'py',
   JAVASCRIPT = 'js',
-  TYPESCRIPT = 'ts'
+  TYPESCRIPT = 'ts',
 }
 
 /**
@@ -19,7 +19,7 @@ export enum HttpMethod {
   DELETE = 'delete',
   PATCH = 'patch',
   HEAD = 'head',
-  OPTIONS = 'options'
+  OPTIONS = 'options',
 }
 
 /**
@@ -27,7 +27,7 @@ export enum HttpMethod {
  */
 export const ConfigFiles = {
   API_ROUTE: 'config.yaml',
-  LAYER: 'layer.yaml'
+  LAYER: 'layer.yaml',
 } as const;
 
 /**
@@ -36,7 +36,7 @@ export const ConfigFiles = {
 export const RequirementsFile = {
   [SupportedFileExtension.PYTHON]: 'requirements.txt',
   [SupportedFileExtension.JAVASCRIPT]: 'package.json',
-  [SupportedFileExtension.TYPESCRIPT]: 'package.json'
+  [SupportedFileExtension.TYPESCRIPT]: 'package.json',
 } as const;
 
 /**
@@ -52,7 +52,10 @@ export const VALID_FILE_EXTENSIONS = Object.values(SupportedFileExtension);
 /**
  * Type guard to check if a value is a valid enum value
  */
-function isEnumValue<T extends Record<string, string>>(enumObj: T, value: string): value is T[keyof T] {
+function isEnumValue<T extends Record<string, string>>(
+  enumObj: T,
+  value: string,
+): value is T[keyof T] {
   return Object.values(enumObj).includes(value as T[keyof T]);
 }
 

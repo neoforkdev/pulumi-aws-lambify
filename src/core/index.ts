@@ -2,4 +2,4 @@
 export * from './logger';
 export * from './model';
 export * from './parser';
-export * from './utils'; 
+export * from './utils';

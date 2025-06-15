@@ -1,5 +1,6 @@
 import * as path from 'path';
 import fs from 'fs';
+
 import { BackendParser, ApiParser, LayerParser, OpenApiParser } from './src';
 
 async function demonstrateParsingExample() {
@@ -7,7 +8,7 @@ async function demonstrateParsingExample() {
 
   // Example directory path
   const examplePath = path.join(__dirname, 'examples', 'basic');
-  
+
   if (!fs.existsSync(examplePath)) {
     console.error('Example directory not found:', examplePath);
     return;
@@ -18,32 +19,37 @@ async function demonstrateParsingExample() {
   try {
     console.log('📡 Parsing backend structure...');
     const backend = await backendParser.parse(examplePath);
-    
-    console.log(`\n✅ Found ${backend.api.routes.length} API routes and ${backend.layers.layers.length} layers\n`);
-    
+
+    console.log(
+      `\n✅ Found ${backend.api.routes.length} API routes and ${backend.layers.layers.length} layers\n`,
+    );
+
     // Display API routes
-    backend.api.routes.forEach(route => {
+    backend.api.routes.forEach((route) => {
       console.log(`📍 Route: ${route.route}`);
-      route.methods.forEach(method => {
-        console.log(`  - ${method.method.toUpperCase()}: ${method.handlerFile}`);
+      route.methods.forEach((method) => {
+        console.log(
+          `  - ${method.method.toUpperCase()}: ${method.handlerFile}`,
+        );
       });
     });
-    
+
     // Display layers
-    backend.layers.layers.forEach(layer => {
+    backend.layers.layers.forEach((layer) => {
       console.log(`\n🧱 Layer: ${layer.name}`);
-      console.log(`  Description: ${layer.config.description || 'No description'}`);
+      console.log(
+        `  Description: ${layer.config.description || 'No description'}`,
+      );
       console.log(`  Runtimes: ${layer.config.runtimes.join(', ')}`);
       console.log(`  Dependencies: ${layer.dependenciesFile ? 'Yes' : 'No'}`);
     });
-    
   } catch (error) {
     console.error('❌ Backend parsing failed:', error);
   }
 
   // Demo individual parsers with specific paths
   console.log('\n🔧 Individual Parser Examples:');
-  
+
   try {
     // ApiParser with specific directory
     const apiParser = new ApiParser();
@@ -79,4 +85,4 @@ async function demonstrateParsingExample() {
 }
 
 // Run the demo
-demonstrateParsingExample(); 
+demonstrateParsingExample();

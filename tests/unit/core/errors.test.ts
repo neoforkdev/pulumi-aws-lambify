@@ -1,9 +1,18 @@
 import { describe, it, expect } from 'vitest';
-import { LambifyError, FileError } from '../../../src/core/model/type/core/errors';
+
+import {
+  LambifyError,
+  FileError,
+} from '../../../src/core/model/type/core/errors';
 
 // Concrete implementations for testing classes
 class TestLambifyError extends LambifyError {
-  constructor(message: string, context: Record<string, unknown> = {}, cause?: Error, suggestion?: string) {
+  constructor(
+    message: string,
+    context: Record<string, unknown> = {},
+    cause?: Error,
+    suggestion?: string,
+  ) {
     super(message, context, cause, suggestion);
   }
 }
@@ -15,7 +24,7 @@ class TestFileError extends FileError {
     location?: string,
     context: Record<string, unknown> = {},
     cause?: Error,
-    suggestion?: string
+    suggestion?: string,
   ) {
     super(message, filePath, location, context, cause, suggestion);
   }
@@ -43,7 +52,12 @@ describe('LambifyError', () => {
   });
 
   it('should create error with suggestion', () => {
-    const error = new TestLambifyError('Test error', {}, undefined, 'Fix the issue');
+    const error = new TestLambifyError(
+      'Test error',
+      {},
+      undefined,
+      'Fix the issue',
+    );
 
     expect(error.suggestion).toBe('Fix the issue');
   });
@@ -73,7 +87,12 @@ describe('LambifyError', () => {
     });
 
     it('should include suggestion when present', () => {
-      const error = new TestLambifyError('Test error', {}, undefined, 'Try this fix');
+      const error = new TestLambifyError(
+        'Test error',
+        {},
+        undefined,
+        'Try this fix',
+      );
       const formatted = error.toString();
 
       expect(formatted).toContain('help: Try this fix');
@@ -84,9 +103,14 @@ describe('LambifyError', () => {
     it('should return structured error information', () => {
       const context = { test: 'value' };
       const cause = new Error('Original error');
-      const error = new TestLambifyError('Test error', context, cause, 'Fix it');
+      const error = new TestLambifyError(
+        'Test error',
+        context,
+        cause,
+        'Fix it',
+      );
 
-      const json = error.toJSON() as any;
+      const json = error.toJSON() as Record<string, unknown>;
 
       expect(json.name).toBe('TestLambifyError');
       expect(json.message).toBe('Test error');
@@ -99,9 +123,19 @@ describe('LambifyError', () => {
 
     it('should handle error without cause', () => {
       const error = new TestLambifyError('Test error');
-      const json = error.toJSON() as any;
+      const json = error.toJSON() as Record<string, unknown>;
 
       expect(json.cause).toBeUndefined();
+    });
+
+    it('should serialize to JSON correctly', () => {
+      const error = new TestLambifyError('Test message', { key: 'value' });
+      const json = error.toJSON() as Record<string, unknown>;
+
+      expect(json.name).toBe('TestLambifyError');
+      expect(json.message).toBe('Test message');
+      expect(json.timestamp).toBeDefined();
+      expect(json.context).toEqual({ key: 'value' });
     });
   });
 });
@@ -116,7 +150,11 @@ describe('FileError', () => {
   });
 
   it('should create file error with location', () => {
-    const error = new TestFileError('File error', '/path/to/file.ts', '/path/to/file.ts:10:5');
+    const error = new TestFileError(
+      'File error',
+      '/path/to/file.ts',
+      '/path/to/file.ts:10:5',
+    );
 
     expect(error.filePath).toBe('/path/to/file.ts');
     expect(error.location).toBe('/path/to/file.ts:10:5');
@@ -144,7 +182,11 @@ describe('FileError', () => {
     });
 
     it('should return custom location when provided', () => {
-      const error = new TestFileError('File error', '/path/to/file.ts', '/path/to/file.ts:10:5');
+      const error = new TestFileError(
+        'File error',
+        '/path/to/file.ts',
+        '/path/to/file.ts:10:5',
+      );
 
       expect(error.location).toBe('/path/to/file.ts:10:5');
     });
@@ -152,11 +194,25 @@ describe('FileError', () => {
 
   it('should merge additional context', () => {
     const additionalContext = { operation: 'validation' };
-    const error = new TestFileError('File error', '/path/to/file.ts', undefined, additionalContext);
+    const error = new TestFileError(
+      'File error',
+      '/path/to/file.ts',
+      undefined,
+      additionalContext,
+    );
 
     expect(error.context).toEqual({
       filePath: '/path/to/file.ts',
-      operation: 'validation'
+      operation: 'validation',
     });
   });
-}); 
+
+  it('should serialize to JSON correctly', () => {
+    const error = new TestFileError('File error', '/path/to/file.ts');
+    const json = error.toJSON() as Record<string, unknown>;
+
+    expect(json.name).toBe('TestFileError');
+    expect(json.message).toContain('File error');
+    expect(json.context).toEqual({ filePath: '/path/to/file.ts' });
+  });
+});

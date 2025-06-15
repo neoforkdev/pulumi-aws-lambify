@@ -6,4 +6,4 @@ paths:
   /invalid:
     get:
       # Missing responses field (required)
-      summary: Invalid endpoint 
+      summary: Invalid endpoint

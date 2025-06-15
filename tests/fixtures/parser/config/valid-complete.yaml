@@ -50,4 +50,4 @@ vpc:
   securityGroupIds:
     - sg-0123456789abcdef0
   subnetIds:
-    - subnet-abcdef0123456789 
+    - subnet-abcdef0123456789

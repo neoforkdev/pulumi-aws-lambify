@@ -25,4 +25,4 @@ export interface ParsedLayer {
  */
 export interface ParsedLayers {
   readonly layers: readonly ParsedLayer[];
-} 
+}

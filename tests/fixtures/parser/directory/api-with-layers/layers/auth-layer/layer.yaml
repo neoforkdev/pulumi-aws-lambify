@@ -2,4 +2,4 @@ description: Authentication utilities layer
 runtimes:
   - python3.9
   - python3.10
-license_info: MIT 
+license_info: MIT

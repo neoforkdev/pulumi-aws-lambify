@@ -1,16 +1,20 @@
-import { describe, it, expect, beforeEach } from 'vitest';
 import * as path from 'path';
-import { 
-  ConfigParser, 
-  ConfigFileNotFoundError, 
-  ConfigParseError, 
-  ConfigValidationError 
-} from '../../../../src/core/parser/config';
-import { FileError } from '../../../../src/core/model/type/core/errors';
+
+import { describe, it, expect, beforeEach } from 'vitest';
+
+import { ConfigParser } from '../../../../src/core/parser/config/parser';
+import {
+  ConfigFileNotFoundError,
+  ConfigParseError,
+  ConfigValidationError,
+} from '../../../../src/core/parser/config/errors';
 
 describe('ConfigParser', () => {
   let parser: ConfigParser;
-  const configFixturesDir = path.resolve(__dirname, '../../../fixtures/parser/config');
+  const configFixturesDir = path.resolve(
+    __dirname,
+    '../../../fixtures/parser/config',
+  );
 
   beforeEach(() => {
     parser = new ConfigParser();
@@ -25,7 +29,7 @@ describe('ConfigParser', () => {
         runtime: 'python3.11',
         memory: 128,
         timeout: 3,
-        entry: 'handler.lambda_handler'
+        entry: 'handler.lambda_handler',
       });
     });
 
@@ -43,13 +47,13 @@ describe('ConfigParser', () => {
         permissions: ['dynamodb:GetItem', 's3:PutObject'],
         tags: {
           project: 'jetway',
-          environment: 'dev'
+          environment: 'dev',
         },
         name: 'get-user',
         vpc: {
           securityGroupIds: ['sg-0123456789abcdef0'],
-          subnetIds: ['subnet-abcdef0123456789']
-        }
+          subnetIds: ['subnet-abcdef0123456789'],
+        },
       });
     });
 
@@ -93,20 +97,27 @@ describe('ConfigParser', () => {
   describe('Error Handling', () => {
     it('should throw ConfigFileNotFoundError for non-existent file', async () => {
       const configPath = path.join(configFixturesDir, 'non-existent.yaml');
-      
-      await expect(parser.parse(configPath)).rejects.toThrow(ConfigFileNotFoundError);
+
+      await expect(parser.parse(configPath)).rejects.toThrow(
+        ConfigFileNotFoundError,
+      );
     });
 
     it('should throw ConfigParseError for invalid YAML syntax', async () => {
       const configPath = path.join(configFixturesDir, 'invalid-syntax.yaml');
-      
+
       await expect(parser.parse(configPath)).rejects.toThrow(ConfigParseError);
     });
 
     it('should throw ConfigValidationError for missing required fields', async () => {
-      const configPath = path.join(configFixturesDir, 'invalid-missing-runtime.yaml');
-      
-      await expect(parser.parse(configPath)).rejects.toThrow(ConfigValidationError);
+      const configPath = path.join(
+        configFixturesDir,
+        'invalid-missing-runtime.yaml',
+      );
+
+      await expect(parser.parse(configPath)).rejects.toThrow(
+        ConfigValidationError,
+      );
     });
   });
 
@@ -120,4 +131,4 @@ describe('ConfigParser', () => {
       expect(config.vpc!.subnetIds).toEqual(['subnet-abcdef0123456789']);
     });
   });
-}); 
+});
