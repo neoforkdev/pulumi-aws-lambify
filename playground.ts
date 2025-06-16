@@ -21,7 +21,7 @@ async function demonstrateParsingExample() {
     const backend = await backendParser.parse(examplePath);
 
     console.log(
-      `\n✅ Found ${backend.api.routes.length} API routes and ${backend.layers.layers.length} layers\n`,
+      `\n✅ Found ${backend.api.routes.length} API routes and ${backend.layers.length} layers\n`,
     );
 
     // Display API routes
@@ -35,7 +35,7 @@ async function demonstrateParsingExample() {
     });
 
     // Display layers
-    backend.layers.layers.forEach((layer) => {
+    backend.layers.forEach((layer) => {
       console.log(`\n🧱 Layer: ${layer.name}`);
       console.log(
         `  Description: ${layer.config.description || 'No description'}`,
@@ -64,7 +64,7 @@ async function demonstrateParsingExample() {
     const layersPath = path.join(examplePath, 'layers');
     if (fs.existsSync(layersPath)) {
       const layers = await layerParser.parse(layersPath);
-      console.log(`✅ Layer Parser: Found ${layers.layers.length} layers`);
+      console.log(`✅ Layer Parser: Found ${layers.length} layers`);
     }
   } catch (error) {
     console.error('❌ Individual parser demo failed:', error);
