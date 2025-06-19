@@ -1,2 +1,10 @@
-// Export logger class
-export { Logger } from './logger';
+// Main logger exports
+export { Logger, createLogger, LogLevel } from './logger';
+export type { LogTheme, LogConfig } from './types';
+
+// Module exports for advanced usage
+export { LogConfiguration } from './config';
+export { ThemeProvider } from './themes';
+export { MessageFormatter, FileErrorFormatter } from './formatters';
+export { PrefixTracker } from './tracker';
+export { StringUtils, FileUtils, ParseUtils, TerminalUtils } from './utils';

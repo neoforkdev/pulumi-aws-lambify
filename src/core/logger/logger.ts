@@ -1,112 +1,208 @@
-const RESET = '\x1b[0m';
-const RED = '\x1b[31m';
-const YELLOW = '\x1b[33m';
-const BLUE = '\x1b[34m';
-const GRAY = '\x1b[90m';
+import pino from 'pino';
+import chalk from 'chalk';
+import { FileError } from '../model/type/core/errors';
+import { LogLevel, LogTheme, LogConfig } from './types';
+import { LogConfiguration } from './config';
+import { ThemeProvider } from './themes';
+import { MessageFormatter, FileErrorFormatter } from './formatters';
+import { PrefixTracker } from './tracker';
+import { StringUtils } from './utils';
 
-export enum LogLevel {
-  ERROR = 'error',
-  WARNING = 'warning',
-  INFO = 'info',
-  DEBUG = 'debug',
-}
-
-const LOG_LEVEL_HIERARCHY: Record<LogLevel, number> = {
-  [LogLevel.ERROR]: 0,
-  [LogLevel.WARNING]: 1,
-  [LogLevel.INFO]: 2,
-  [LogLevel.DEBUG]: 3,
-};
-
-const CONSOLE_COLORS: Record<LogLevel, string> = {
-  [LogLevel.ERROR]: RED,
-  [LogLevel.WARNING]: YELLOW,
-  [LogLevel.INFO]: BLUE,
-  [LogLevel.DEBUG]: GRAY,
-};
-
-function getLogLevelFromEnv(): LogLevel {
-  const envLevel = process.env.JETWAY_LOG_LEVEL?.toLowerCase();
-
-  switch (envLevel) {
-    case 'error':
-      return LogLevel.ERROR;
-    case 'warning':
-    case 'warn':
-      return LogLevel.WARNING;
-    case 'info':
-      return LogLevel.INFO;
-    case 'debug':
-      return LogLevel.DEBUG;
-    default:
-      return LogLevel.ERROR;
-  }
-}
-
-function isColorDisabled(): boolean {
-  return !!(process.env.NO_COLOR || process.env.JETWAY_NO_COLOR);
-}
+// ============================================================================
+// MAIN LOGGER CLASS
+// ============================================================================
 
 export class Logger {
+  private readonly pino: pino.Logger;
   private readonly prefix: string;
-  private static globalLogLevel?: LogLevel;
+  private readonly config: LogConfig;
+  private static globalLevel?: LogLevel;
 
-  constructor(prefix: string) {
+  constructor(prefix: string, customThemes?: Record<string, Partial<LogTheme>>) {
     this.prefix = prefix;
+    this.config = LogConfiguration.getConfig();
+    this.pino = this.createPinoInstance();
+    
+    PrefixTracker.register(prefix);
   }
 
+  // ============================================================================
+  // STATIC LEVEL MANAGEMENT
+  // ============================================================================
+
   static setLevel(level: LogLevel): void {
-    Logger.globalLogLevel = level;
+    Logger.globalLevel = level;
   }
 
   static resetLevel(): void {
-    Logger.globalLogLevel = undefined;
+    Logger.globalLevel = undefined;
   }
 
-  private getEffectiveLogLevel(): LogLevel {
-    return Logger.globalLogLevel ?? getLogLevelFromEnv();
+  // ============================================================================
+  // CORE LOGGING METHODS
+  // ============================================================================
+
+  async info(message: string, ...args: unknown[]): Promise<void> {
+    await this.log(LogLevel.INFO, 'info', message, ...args);
   }
 
-  private shouldLog(level: LogLevel): boolean {
-    const effectiveLevel = this.getEffectiveLogLevel();
-    return LOG_LEVEL_HIERARCHY[level] <= LOG_LEVEL_HIERARCHY[effectiveLevel];
+  async error(message: string, error?: unknown, ...args: unknown[]): Promise<void> {
+    const allArgs = error ? [error, ...args] : args;
+    await this.log(LogLevel.ERROR, 'error', message, ...allArgs);
   }
 
-  private log(level: LogLevel, message: string, ...args: unknown[]): void {
-    if (!this.shouldLog(level)) return;
-
-    const colorStart = isColorDisabled() ? '' : CONSOLE_COLORS[level];
-    const colorEnd = isColorDisabled() ? '' : RESET;
-    const timestamp = new Date().toISOString();
-    const formattedArgs = args
-      .map((arg) =>
-        typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg),
-      )
-      .join(' ');
-
-    console.log(
-      `${colorStart}[${timestamp}] ${level.toUpperCase()} [${this.prefix}] ${message}${formattedArgs ? ' ' + formattedArgs : ''}${colorEnd}`,
-    );
+  async warning(message: string, ...args: unknown[]): Promise<void> {
+    await this.log(LogLevel.WARNING, 'warn', message, ...args);
   }
 
-  info(message: string, ...args: unknown[]): void {
-    this.log(LogLevel.INFO, message, ...args);
+  async warn(message: string, ...args: unknown[]): Promise<void> {
+    await this.warning(message, ...args);
   }
 
-  error(message: string, error?: unknown, ...args: unknown[]): void {
-    this.log(LogLevel.ERROR, message, ...args);
-    if (error) {
-      const colorStart = isColorDisabled() ? '' : RED;
-      const colorEnd = isColorDisabled() ? '' : RESET;
-      console.log(`${colorStart}${error}${colorEnd}`);
+  async debug(message: string, ...args: unknown[]): Promise<void> {
+    await this.log(LogLevel.DEBUG, 'debug', message, ...args);
+  }
+
+  async success(message: string, ...args: unknown[]): Promise<void> {
+    await this.log(LogLevel.INFO, 'success', message, ...args);
+  }
+
+  async title(message: string, ...args: unknown[]): Promise<void> {
+    await this.log(LogLevel.INFO, 'title', message, ...args);
+  }
+
+  async task(message: string, ...args: unknown[]): Promise<void> {
+    await this.log(LogLevel.INFO, 'task', message, ...args);
+  }
+
+  async plain(message: string, ...args: unknown[]): Promise<void> {
+    await this.log(LogLevel.INFO, 'plain', message, ...args);
+  }
+
+  // ============================================================================
+  // UTILITY METHODS
+  // ============================================================================
+
+  spacer(): void {
+    console.log();
+  }
+
+  separator(title?: string): void {
+    const width = 50;
+    
+    if (title) {
+      const sideLength = Math.max(1, Math.floor((width - title.length - 2) / 2));
+      const leftSide = StringUtils.repeat('-', sideLength);
+      const rightSide = StringUtils.repeat('-', width - title.length - 2 - sideLength);
+      const line = `${leftSide} ${title} ${rightSide}`;
+      console.log(this.config.useColors ? chalk.dim(line) : line);
+    } else {
+      const line = StringUtils.repeat('-', width);
+      console.log(this.config.useColors ? chalk.dim(line) : line);
     }
   }
 
-  warning(message: string, ...args: unknown[]): void {
-    this.log(LogLevel.WARNING, message, ...args);
+  // ============================================================================
+  // PRIVATE IMPLEMENTATION
+  // ============================================================================
+
+  private createPinoInstance(): pino.Logger {
+    return pino({
+      level: this.getEffectiveLevel(),
+      timestamp: this.config.useJson,
+      transport: !this.config.useJson ? {
+        target: 'pino-pretty',
+        options: {
+          colorize: false,
+          translateTime: false,
+          ignore: 'pid,hostname,level,time',
+          messageFormat: '{msg}',
+          levelFirst: false,
+          hideObject: true,
+        },
+      } : undefined,
+    });
   }
 
-  debug(message: string, ...args: unknown[]): void {
-    this.log(LogLevel.DEBUG, message, ...args);
+  private getEffectiveLevel(): LogLevel {
+    return Logger.globalLevel ?? this.config.level;
+  }
+
+  private async log(level: LogLevel, logLevel: string, message: string, ...args: unknown[]): Promise<void> {
+    this.pino.level = this.getEffectiveLevel();
+    
+    if (this.config.useJson) {
+      await this.logJson(level, message, args);
+    } else {
+      await this.logFormatted(level, logLevel, message, args);
+    }
+  }
+
+  private async logJson(level: LogLevel, message: string, args: unknown[]): Promise<void> {
+    const logData: Record<string, unknown> = { prefix: this.prefix };
+    
+    args.forEach((arg, index) => {
+      if (typeof arg === 'object' && arg !== null) {
+        Object.assign(logData, arg);
+      } else {
+        logData[`arg${index}`] = arg;
+      }
+    });
+    
+    this.pino[level](logData, message);
+  }
+
+  private async logFormatted(level: LogLevel, logLevel: string, message: string, args: unknown[]): Promise<void> {
+    const formattedMessage = await this.formatMessage(logLevel, message, args);
+    this.pino[level](formattedMessage);
+  }
+
+  private async formatMessage(level: string, message: string, args: unknown[]): Promise<string> {
+    const theme = ThemeProvider.getTheme(level, undefined, this.config.supportsUnicode);
+    const fileError = args.find(arg => arg instanceof FileError) as FileError | undefined;
+    
+    if (fileError && level === 'error') {
+      return await this.formatFileError(theme, message, fileError);
+    }
+    
+    const isDebugMode = this.getEffectiveLevel() === LogLevel.DEBUG;
+    
+    return isDebugMode ?
+      MessageFormatter.formatDebug(level, theme, message, args, this.prefix, PrefixTracker.getMaxLength(), this.config.useColors) :
+      MessageFormatter.formatSimple(level, theme, message, args, this.config.useColors);
+  }
+
+  private async formatFileError(theme: LogTheme, message: string, fileError: FileError): Promise<string> {
+    const enhancedError = await FileErrorFormatter.format(fileError, this.config.useColors);
+    const isDebugMode = this.getEffectiveLevel() === LogLevel.DEBUG;
+    const symbol = theme.symbol && this.config.useColors ? theme.color(theme.symbol) : theme.symbol;
+    
+    if (!isDebugMode) {
+      return symbol ? `${symbol} ${message}\n${enhancedError}` : `${message}\n${enhancedError}`;
+    }
+    
+    const colorFn = this.config.useColors ? theme.color : (text: string) => text;
+    const timestamp = this.config.useColors ? chalk.dim(`[${StringUtils.formatTime()}]`) : `[${StringUtils.formatTime()}]`;
+    const levelLabel = this.config.useColors ? chalk.bold(colorFn(theme.label)) : theme.label;
+    const prefixFormatted = this.config.useColors ? chalk.dim(`[${this.prefix}]`) : `[${this.prefix}]`;
+    const spacesAfterPrefix = StringUtils.repeat(' ', Math.max(0, PrefixTracker.getMaxLength() - this.prefix.length));
+    const symbolPart = symbol ? `${symbol} ` : '';
+    
+    return `${timestamp} ${symbolPart}${levelLabel} ${prefixFormatted}${spacesAfterPrefix} ${message}\n${enhancedError}`;
   }
 }
+
+// ============================================================================
+// FACTORY FUNCTION
+// ============================================================================
+
+export function createLogger(prefix: string, customThemes?: Record<string, Partial<LogTheme>>): Logger {
+  return new Logger(prefix, customThemes);
+}
+
+// ============================================================================
+// RE-EXPORTS FOR CONVENIENCE
+// ============================================================================
+
+export { LogLevel } from './types';
+export type { LogTheme, LogConfig } from './types';

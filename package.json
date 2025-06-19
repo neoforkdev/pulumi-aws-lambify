@@ -1,9 +1,13 @@
 {
   "name": "@neofork/jetway",
   "version": "1.0.0",
+  "description": "Jetway ✈️ – A UX-first CLI to deploy file-based backends to AWS Lambda & API Gateway",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "files": [
     "dist/**/*",
     "README.md",
@@ -16,11 +20,16 @@
       "import": "./dist/index.js"
     }
   },
+  "bin": {
+    "jetway": "./dist/cli.js"
+  },
   "scripts": {
     "build": "npm run clean && tsc -p tsconfig.build.json",
+    "build:cli": "esbuild src/cli.ts --bundle --platform=node --target=node20 --format=esm --outfile=dist/cli.js --banner:js=\"#!/usr/bin/env node\" --packages=external && chmod +x dist/cli.js",
     "build:check": "npm run lint && npm run test && npm run build",
     "clean": "rm -rf dist",
     "dev": "tsx examples/basic/index.ts",
+    "dev:cli": "tsx src/cli.ts",
     "playground": "tsx playground.ts",
     "lint": "eslint .",
     "format": "prettier --write .",
@@ -40,16 +49,22 @@
     "url": "https://github.com/NeoforkDev/jetway/issues"
   },
   "homepage": "https://github.com/NeoforkDev/jetway#readme",
-  "description": "",
   "dependencies": {
     "@apidevtools/swagger-parser": "^11.0.1",
     "@pulumi/aws": "^6.81.0",
     "@pulumi/pulumi": "^3.171.0",
+    "chalk": "^5.4.1",
+    "commander": "^14.0.0",
+    "esbuild": "^0.25.5",
+    "pino": "^9.7.0",
+    "pino-pretty": "^13.0.0",
+    "string-width": "^7.2.0",
     "yaml": "^2.8.0",
     "zod": "^3.25.57"
   },
   "devDependencies": {
     "@eslint/js": "^9.28.0",
+    "@types/chalk": "^0.4.31",
     "@types/node": "^22.15.21",
     "@types/swagger-parser": "^4.0.3",
     "eslint": "^9.27.0",
