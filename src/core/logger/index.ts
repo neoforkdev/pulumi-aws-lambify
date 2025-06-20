@@ -1,5 +1,6 @@
 // Main logger exports
-export { Logger, createLogger, LogLevel } from './logger';
+export { Logger, createLogger } from './logger';
+export { LogLevel } from './types';
 export type { LogTheme, LogConfig } from './types';
 
 // Module exports for advanced usage

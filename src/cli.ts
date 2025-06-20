@@ -9,7 +9,7 @@ import { mockCommand } from './cli/commands/mock';
 import { openapiCommand } from './cli/commands/openapi';
 import { configCommand } from './cli/commands/config';
 import { envCommand } from './cli/commands/env';
-import { emoji } from './cli/utils';
+import { EmojiUtils } from './core/logger/utils';
 import { Logger } from './core/logger';
 
 const require = createRequire(import.meta.url);
@@ -20,7 +20,7 @@ const program = new Command();
 
 program
   .name('jetway')
-  .description(emoji`✈️  Jetway - Your API just boarded first class`)
+  .description(EmojiUtils.emoji`✈️  Jetway - Your API just boarded first class`)
   .version(packageJson.version);
 
 // Register commands

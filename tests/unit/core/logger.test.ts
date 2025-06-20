@@ -1,6 +1,7 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 
-import { Logger, LogLevel } from '../../../src/core/logger/logger';
+import { Logger } from '../../../src/core/logger/logger';
+import { LogLevel } from '../../../src/core/logger/types';
 
 describe('Logger', () => {
   describe('Interface', () => {

@@ -1,6 +1,7 @@
 /**
  * Core error classes for the Jetway system
  */
+import chalk from 'chalk';
 
 /**
  * Base error class for all Jetway-related errors
@@ -75,7 +76,7 @@ export abstract class LambifyError extends Error {
    * Child classes can override this if they need custom formatting
    */
   protected getFormattedMessage(): string {
-    return ErrorFormatter.formatSimpleError(
+    return ErrorFormatter.formatError(
       this.errorType,
       this.path,
       this.description,
@@ -171,180 +172,111 @@ export interface ErrorContext {
   message: string;
 }
 
-/**
- * Abstract error formatter for creating Rust-like error displays
- * Can be used by any parser to format errors with source context
- */
 export abstract class ErrorFormatter {
-  /**
-   * Create a simple Rust-like error format with optional suggestion
-   */
-  static formatSimpleError(
-    errorType: string,
-    path: string,
-    description: string,
-    suggestion?: string,
-  ): string {
-    const lineNumWidth = 3; // Fixed width for simple errors
+  private static colors = {
+    error: chalk.red.bold,
+    arrow: chalk.blue.bold,
+    path: chalk.white,
+    help: chalk.green,
+    lineNum: chalk.cyan,
+    contextNum: chalk.dim,
+    pipe: chalk.whiteBright,
+    contextPipe: chalk.dim,
+    content: chalk.whiteBright,
+    contextContent: chalk.dim,
+    pointer: chalk.red.bold,
+    separator: chalk.dim,
+  };
 
-    let result = `error: ${errorType}\n`;
-    result += `  --> ${path}\n`;
-    result += `${' '.repeat(lineNumWidth)} |\n`;
-
-    // Handle multi-line descriptions
-    const descriptionLines = description.split('\n');
-    descriptionLines.forEach((line) => {
-      result += `${' '.repeat(lineNumWidth)} | ${line}\n`;
+  static formatError(errorType: string, path: string, description: string, suggestion?: string): string {
+    const lineNumWidth = 3;
+    const lines = description.split('\n');
+    
+    let result = `${this.colors.error('error')}: ${errorType}\n  ${this.colors.arrow('-->')} ${this.colors.path(path)}\n`;
+    result += `${' '.repeat(lineNumWidth)} ${this.colors.separator('│')}\n`;
+    
+    lines.forEach(line => {
+      result += `${' '.repeat(lineNumWidth)} ${this.colors.separator('│')} ${line}\n`;
     });
-
-    result += `${' '.repeat(lineNumWidth)} |`;
-
-    // Add suggestion if available
+    
+    result += `${' '.repeat(lineNumWidth)} ${this.colors.separator('│')}`;
+    
     if (suggestion) {
-      result += `\n${' '.repeat(lineNumWidth)} = help: ${suggestion}`;
+      result += `\n${' '.repeat(lineNumWidth)} ${this.colors.help('=')} ${this.colors.help('help')}: ${suggestion}`;
     }
-
+    
     return result;
   }
 
-  /**
-   * Format a parsing error with Rust-like display showing exact position and suggestion
-   */
-  static formatParsingError(
-    context: ErrorContext,
-    suggestion?: string,
-  ): string {
+  static formatParsingError(context: ErrorContext, suggestion?: string): string {
     const { filePath, source, position, message } = context;
     const lines = source.split('\n');
     const errorLine = lines[position.line - 1];
 
     if (!errorLine) {
-      return `error: ${message}\n  --> ${filePath}:${position.line}:${position.column}`;
+      return this.formatError(message, `${filePath}:${position.line}:${position.column}`, '', suggestion);
     }
 
-    const lineNumWidth = Math.max(3, String(position.line + 1).length);
-
-    let result = `error: ${message}\n`;
-    result += `  --> ${filePath}:${position.line}:${position.column}\n`;
-    result += `${' '.repeat(lineNumWidth)} |\n`;
-
-    // Show context lines (line before if available)
+    const maxLineNum = Math.max(position.line + 1, 3);
+    const lineNumWidth = Math.max(3, String(maxLineNum).length);
+    
+    let result = `${this.colors.error('error')}: ${message}\n  ${this.colors.arrow('-->')} ${this.colors.path(`${filePath}:${position.line}:${position.column}`)}\n`;
+    result += `${' '.repeat(lineNumWidth)} ${this.colors.separator('│')}\n`;
+    
     if (position.line > 1 && lines[position.line - 2]) {
       const prevLineNum = position.line - 1;
-      result += `${String(prevLineNum).padStart(lineNumWidth)} | ${lines[position.line - 2]}\n`;
+      result += `${this.colors.contextNum(String(prevLineNum).padStart(lineNumWidth))} ${this.colors.contextPipe('│')} ${this.colors.contextContent(lines[position.line - 2])}\n`;
     }
-
-    // Show error line
-    result += `${String(position.line).padStart(lineNumWidth)} | ${errorLine}\n`;
-
-    // Show error pointer
-    const pointer = ' '.repeat(position.column - 1) + '^';
-    result += `${' '.repeat(lineNumWidth)} | ${pointer}\n`;
-
-    // Show context lines (line after if available)
+    
+    result += `${this.colors.lineNum(String(position.line).padStart(lineNumWidth))} ${this.colors.pipe('│')} ${this.colors.content(errorLine)}\n`;
+    result += `${' '.repeat(lineNumWidth)} ${this.colors.pipe('│')} ${this.colors.pointer(' '.repeat(position.column - 1) + '^')}\n`;
+    
     if (position.line < lines.length && lines[position.line]) {
       const nextLineNum = position.line + 1;
-      result += `${String(nextLineNum).padStart(lineNumWidth)} | ${lines[position.line]}\n`;
+      result += `${this.colors.contextNum(String(nextLineNum).padStart(lineNumWidth))} ${this.colors.contextPipe('│')} ${this.colors.contextContent(lines[position.line])}\n`;
     }
 
-    result += `${' '.repeat(lineNumWidth)} |`;
-
-    // Add suggestion if available
+    result += `${' '.repeat(lineNumWidth)} ${this.colors.separator('│')}`;
+    
     if (suggestion) {
-      result += `\n${' '.repeat(lineNumWidth)} = help: ${suggestion}`;
+      result += `\n${' '.repeat(lineNumWidth)} ${this.colors.help('=')} ${this.colors.help('help')}: ${suggestion}`;
     }
-
+    
     return result;
   }
 
-  /**
-   * Extract position information from YAML parsing errors
-   */
   static extractYamlPosition(yamlError: string): ErrorPosition | null {
-    // Match patterns like "at line 3, column 1:"
-    const lineColumnMatch = yamlError.match(/at line (\d+), column (\d+):/);
-    if (lineColumnMatch) {
-      return {
-        line: parseInt(lineColumnMatch[1], 10),
-        column: parseInt(lineColumnMatch[2], 10),
-      };
-    }
+    const patterns = [
+      /(?:at )?line (\d+):(\d+)/,
+      /at line (\d+), column (\d+):/,
+      /line (\d+), column (\d+)/,
+    ];
 
-    // Match patterns like "line 3, column 1"
-    const simpleMatch = yamlError.match(/line (\d+), column (\d+)/);
-    if (simpleMatch) {
-      return {
-        line: parseInt(simpleMatch[1], 10),
-        column: parseInt(simpleMatch[2], 10),
-      };
+    for (const pattern of patterns) {
+      const match = yamlError.match(pattern);
+      if (match) {
+        return { line: parseInt(match[1], 10), column: parseInt(match[2], 10) };
+      }
     }
-
     return null;
   }
 
-  /**
-   * Create a formatted error message for file parsing errors with suggestion
-   */
-  static formatFileParsingError(
-    filePath: string,
-    source: string,
-    error: Error,
-    customMessage?: string,
-    suggestion?: string,
-  ): string {
+  static formatFileParsingError(filePath: string, source: string, error: Error, customMessage?: string, suggestion?: string): string {
     const message = customMessage || error.message;
-
-    // Try to extract position from error message
     const position = this.extractYamlPosition(error.message);
 
-    if (position) {
-      return this.formatParsingError(
-        {
-          filePath,
-          source,
-          position,
-          message,
-        },
-        suggestion,
-      );
-    }
-
-    // Fallback to simple error format with suggestion
-    const lineNumWidth = 3;
-    let result = `error: ${message}\n  --> ${filePath}`;
-
-    if (suggestion) {
-      result += `\n${' '.repeat(lineNumWidth)} = help: ${suggestion}`;
-    }
-
-    return result;
+    return position 
+      ? this.formatParsingError({ filePath, source, position, message }, suggestion)
+      : this.formatError(message, filePath, '', suggestion);
   }
 
-  /**
-   * Format validation errors with multiple issues
-   */
-  static formatValidationError(
-    filePath: string,
-    issues: Array<{ path: string[]; message: string }>,
-    source?: string,
-    suggestion?: string,
-  ): string {
-    const lineNumWidth = 3;
-    let result = `error: Config validation failed\n  --> ${filePath}\n`;
-    result += `${' '.repeat(lineNumWidth)} |\n`;
-
-    issues.forEach((issue, index) => {
+  static formatValidationError(filePath: string, issues: Array<{ path: string[]; message: string }>, source?: string, suggestion?: string): string {
+    const description = issues.map((issue, index) => {
       const pathStr = issue.path.length > 0 ? issue.path.join('.') : 'Required';
-      result += `${' '.repeat(lineNumWidth)} | ${index + 1}. ${pathStr}: ${issue.message}\n`;
-    });
+      return `${index + 1}. ${pathStr}: ${issue.message}`;
+    }).join('\n');
 
-    result += `${' '.repeat(lineNumWidth)} |`;
-
-    if (suggestion) {
-      result += `\n${' '.repeat(lineNumWidth)} = help: ${suggestion}`;
-    }
-
-    return result;
+    return this.formatError('Config validation failed', filePath, description, suggestion);
   }
 }
 

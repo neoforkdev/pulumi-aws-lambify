@@ -1,5 +1,52 @@
 import { promises as fs } from 'fs';
 import path from 'path';
+import stringWidth from 'string-width';
+
+// ============================================================================
+// EMOJI UTILITIES
+// ============================================================================
+
+export class EmojiUtils {
+  static supportsEmoji(): boolean {
+    const testEmoji = '✅';
+    return stringWidth(testEmoji) >= 2;
+  }
+
+  private static stripEmojisAndFixSpaces(input: string): string {
+    let result = '';
+    let prevWasSpace = false;
+
+    for (const char of Array.from(input)) {
+      const isEmoji = stringWidth(char) >= 2;
+      const isSpace = char === ' ';
+
+      if (isEmoji) {
+        continue;
+      }
+
+      if (isSpace) {
+        if (!prevWasSpace && result.length > 0) {
+          result += char;
+          prevWasSpace = true;
+        }
+      } else {
+        result += char;
+        prevWasSpace = false;
+      }
+    }
+
+    return result.trim();
+  }
+
+  static emoji(strings: TemplateStringsArray, ...values: any[]): string {
+    const full = strings.reduce((acc, str, i) => acc + str + (values[i] ?? ''), '');
+    return this.supportsEmoji() ? full : this.stripEmojisAndFixSpaces(full);
+  }
+
+  static format(text: string): string {
+    return this.supportsEmoji() ? text : this.stripEmojisAndFixSpaces(text);
+  }
+}
 
 // ============================================================================
 // TERMINAL CAPABILITIES DETECTION
@@ -219,7 +266,7 @@ export class StringUtils {
     
     return args.map(arg => 
       typeof arg === 'object' && arg !== null ? 
-        `\n${JSON.stringify(arg, null, 2)}` : ` ${String(arg)}`
+        `\n${String(arg)}` : ` ${String(arg)}`
     ).join('');
   }
 }

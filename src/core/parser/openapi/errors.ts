@@ -17,7 +17,7 @@ export class OpenApiFileNotFoundError extends FileError {
   }
 
   protected getFormattedMessage(): string {
-    return ErrorFormatter.formatSimpleError(
+    return ErrorFormatter.formatError(
       'OpenAPI file not found',
       this.filePath,
       'File does not exist or cannot be accessed',
